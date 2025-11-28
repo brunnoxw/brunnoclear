@@ -1,0 +1,7 @@
+# Arquivos de configuração que não devem ser empacotados
+config.json
+config.example.json
+
+# Dependências nativas problemáticas
+node_modules/better-sqlite3/
+node_modules/@napi-rs/

@@ -1,0 +1,71 @@
+# Dependências
+node_modules/
+package-lock.json
+yarn.lock
+
+# Configurações do usuário e tokens (SENSÍVEL)
+config.json
+tokens.txt
+token.txt
+.env
+.env.local
+
+# Backups gerados (podem conter dados privados)
+backups/
+backup/
+*.backup
+*.bak
+wiki/
+# Arquivos de build e executáveis
+dist/
+build/
+*.exe
+*.app
+*.dmg
+*.deb
+*.rpm
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+.githbub/
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Temporários
+*.tmp
+temp/
+.update/
+temp_changelog.txt
+.cache/
+*.cache
+
+# Arquivos específicos do Windows
+*.lnk
+Thumbs.db:encryptable
+
+# Arquivos que podem conter dados sensíveis
+user_data/
+screenshots/
+*.session
+*.db
+*.sqlite
+*.sqlite3

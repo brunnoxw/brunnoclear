@@ -1,0 +1,3 @@
+node:sqlite
+node:*
+*.node

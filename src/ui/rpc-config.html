@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Rich Presence - BrunnoClear</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 80px;
+            height: 44px;
+            background: linear-gradient(135deg, #374151, #4b5563);
+            border-radius: 22px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid #4b5563;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            border-color: #8b5cf6;
+            box-shadow: inset 0 2px 6px rgba(139, 92, 246, 0.2), 0 4px 16px rgba(139, 92, 246, 0.3);
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #ffffff, #f1f5f9);
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(36px);
+            background: linear-gradient(135deg, #ffffff, #fef3ff);
+            box-shadow: 0 3px 12px rgba(139, 92, 246, 0.4), 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toggle-switch:hover {
+            transform: scale(1.05);
+        }
+        
+        .toggle-switch:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-add {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-add:active {
+            transform: translateY(0);
+        }
+        
+        .botao-item {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .botao-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .botao-item:hover::before {
+            left: 100%;
+        }
+        
+        .botao-item:hover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+            }
+        }
+        
+        .remove-btn {
+            opacity: 0;
+            transition: all 0.3s ease;
+            transform: scale(0.8) rotate(0deg);
+        }
+        
+        .botao-item:hover .remove-btn {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+        
+        .remove-btn:hover {
+            background: #dc2626 !important;
+            transform: scale(1.1) rotate(90deg) !important;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+        
+        .area-vazia {
+            transition: all 0.3s ease;
+        }
+        
+        .area-vazia:hover {
+            border-color: #6b7280;
+            background: rgba(139, 92, 246, 0.02);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 min-h-screen p-4 md:p-8">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl"></div>
+    </div>
+    
+    <div class="relative max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8 float">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-600 to-violet-600 mb-4 shadow-lg shadow-purple-500/50">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-violet-400">
+                Rich Presence Config
+            </h1>
+            <p class="text-zinc-400">Personalize seu status no Discord com estilo</p>
+        </div>
+
+        <!-- Status Toggle -->
+        <div class="mb-8 flex justify-center">
+            <div class="bg-gradient-to-r from-zinc-900/90 to-zinc-800/90 border border-zinc-700/50 rounded-3xl p-6 shadow-2xl backdrop-blur-sm">
+                <div class="flex items-center justify-between gap-8">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-purple-600/20 rounded-xl">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Rich Presence</h3>
+                                <p class="text-sm text-zinc-400">Controle seu status no Discord</p>
+                            </div>
+                        </div>
+                        <div id="status-badge" class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 w-fit">
+                            <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span> 
+                            <span>Ativo</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center gap-3">
+                        <div id="rpc-toggle" class="toggle-switch active" onclick="toggleRPC()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                        <span class="text-xs text-zinc-500 font-medium">Clique para alternar</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid lg:grid-cols-5 gap-6">
+            <!-- Left Column: Form (3/5) -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Card de Configurações -->
+                <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="border-b border-zinc-800 bg-zinc-900/80 px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Configurações Gerais
+                        </h2>
+                    </div>
+                    
+                    <div class="p-6 space-y-5">
+                        <!-- ID da Aplicação -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-zinc-200 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                                ID da Aplicação
+                            </label>
+                            <input type="text" id="id_aplicacao" 
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                   placeholder="1441501260984356907">
+                            <p class="text-xs text-zinc-500 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                Crie uma aplicação em <a href="https://discord.com/developers/applications" target="_blank" class="text-purple-400 hover:text-purple-300 underline">discord.com/developers</a>
+                            </p>
+                        </div>
+
+                        <!-- Nome da Aplicação -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-zinc-200 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                </svg>
+                                Nome da Aplicação
+                                <span id="loading-app" class="hidden ml-2">
+                                    <svg class="animate-spin h-4 w-4 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </span>
+                            </label>
+                            <input type="text" id="nome_aplicacao" disabled
+                                   class="w-full px-4 py-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50 text-zinc-400 placeholder-zinc-600 cursor-not-allowed"
+                                   placeholder="Aguardando ID da aplicação...">
+                        </div>
+
+                        <!-- Grid 2 colunas para Estado e Detalhe -->
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-zinc-200">Detalhe</label>
+                                <input type="text" id="detalhe" 
+                                       class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                       placeholder="O melhor CL!">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-zinc-200">Estado</label>
+                                <input type="text" id="estado" 
+                                       class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                       placeholder="No menu principal">
+                            </div>
+                        </div>
+
+                        <!-- URL da Imagem -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-zinc-200 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                URL da Imagem Grande
+                            </label>
+                            <input type="url" id="url_imagem" 
+                                   class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                   placeholder="https://i.imgur.com/exemplo.png">
+                        </div>
+
+                        <!-- Botões Dinâmicos -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-medium text-zinc-200">Botões</h3>
+                                <button type="button" onclick="adicionarBotao()" id="btn-adicionar"
+                                        class="btn-add inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-medium hover:bg-purple-600/30 transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Adicionar
+                                </button>
+                            </div>
+                            
+                            <div id="botoes-container" class="space-y-2">
+                                <!-- Área vazia - será removida quando adicionar botões -->
+                                <div id="botoes-vazio" class="area-vazia text-center py-8 text-zinc-500 text-sm border-2 border-dashed border-zinc-700 rounded-xl">
+                                    <svg class="w-10 h-10 mx-auto mb-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <p class="font-medium">Clique em "Adicionar" para criar botões</p>
+                                    <p class="text-xs mt-1 text-zinc-600">Máximo 2 botões permitidos pelo Discord</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="salvarConfig()" 
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] transform">
+                        <span class="flex items-center justify-center gap-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="font-bold">Salvar Configurações</span>
+                        </span>
+                    </button>
+                    
+                    <button onclick="recarregarConfig()" 
+                            class="sm:w-auto bg-zinc-800/60 hover:bg-zinc-700/80 border border-zinc-600 text-zinc-300 hover:text-white font-medium py-4 px-5 rounded-xl transition-all hover:scale-[1.02] transform backdrop-blur-sm">
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Recarregar</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Mensagem de Feedback -->
+                <div id="mensagem" class="hidden"></div>
+            </div>
+
+            <!-- Right Column: Preview (2/5) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Preview Card -->
+                <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden sticky top-8">
+                    <div class="border-b border-zinc-800 bg-zinc-900/80 px-6 py-4">
+                        <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Preview ao Vivo
+                        </h2>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Preview exatamente como no Discord -->
+                        <div class="bg-[#111214] rounded-lg p-4">
+                            <h3 class="text-xs font-semibold text-zinc-400 uppercase mb-3">Jogando</h3>
+                              <div class="flex items-start gap-3">                                <!-- Imagem Grande com Placeholder -->
+                                <div class="relative flex-shrink-0">
+                                    <!-- Placeholder cinza -->
+                                    <div id="preview-placeholder" 
+                                         class="absolute inset-0 w-[60px] h-[60px] rounded-lg bg-zinc-700 animate-pulse"></div>
+                                    <!-- Imagem -->
+                                    <img id="preview-img" 
+                                         src="https://i.imgur.com/uTql7fj.jpeg" 
+                                         class="w-[60px] h-[60px] rounded-lg object-cover relative z-10 opacity-0 transition-opacity duration-300"
+                                         onload="this.style.opacity='1'; document.getElementById('preview-placeholder').style.display='none';"
+                                         onerror="this.style.opacity='0'; document.getElementById('preview-placeholder').style.display='block';">
+                                </div>
+                                
+                                <!-- Informações -->
+                                <div class="flex-1 min-w-0">
+                                    <p id="preview-nome" class="text-sm font-semibold text-white mb-0.5">brunno clear</p>
+                                    <p id="preview-detalhe" class="text-xs text-zinc-300 mb-0.5">O melhor CL!</p>
+                                    <p id="preview-estado" class="text-xs text-zinc-300">No menu principal</p>
+                                    <p id="preview-tempo" class="text-xs text-zinc-400 mt-1">00:42 decorrido</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Botões -->
+                            <div id="preview-botoes" class="mt-3 space-y-2 hidden">
+                                <button id="preview-botao-1" class="hidden w-full bg-[#5865f2] hover:bg-[#4752c4] text-white text-[13px] font-medium py-[7px] px-4 rounded transition-colors">
+                                    Visitar Site
+                                </button>
+                                <button id="preview-botao-2" class="hidden w-full bg-[#5865f2] hover:bg-[#4752c4] text-white text-[13px] font-medium py-[7px] px-4 rounded transition-colors">
+                                    Servidor Discord
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tempoInicio = Date.now();
+        let nomeAppAtual = '';
+        let iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
+        let contadorBotoes = 0; 
+
+        function validarURLImagem(url) {
+            if (!url) return true;
+            try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname.toLowerCase();
+                const extensoesValidas = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+                const temExtensaoValida = extensoesValidas.some(ext => pathname.endsWith(ext));
+                const isDiscordCDN = url.includes('cdn.discordapp.com') || url.includes('cdn.discord.com');
+                return temExtensaoValida || isDiscordCDN;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function validarURL(url) {
+            if (!url) return true;
+            try {
+                const urlObj = new URL(url);
+                return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        setInterval(() => {
+            const segundos = Math.floor((Date.now() - tempoInicio) / 1000);
+            const minutos = Math.floor(segundos / 60);
+            const segs = segundos % 60;
+            document.getElementById('preview-tempo').textContent = 
+                `${String(minutos).padStart(2, '0')}:${String(segs).padStart(2, '0')} decorrido`;
+        }, 1000);
+
+        async function buscarInfoApp(appId) {
+            if (!appId || appId.length < 17) {
+                document.getElementById('nome_aplicacao').value = '';
+                document.getElementById('nome_aplicacao').placeholder = 'Aguardando ID da aplicação...';
+                nomeAppAtual = 'brunno clear';
+                iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
+                atualizarPreview();
+                return;
+            }
+
+            const loadingIcon = document.getElementById('loading-app');
+            loadingIcon.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`/api/discord-app/${appId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const resultado = await response.json();
+                
+                if (resultado.sucesso) {
+                    nomeAppAtual = resultado.nome;
+                    document.getElementById('nome_aplicacao').value = resultado.nome;
+                    document.getElementById('nome_aplicacao').classList.remove('text-zinc-400');
+                    document.getElementById('nome_aplicacao').classList.add('text-white');
+                    
+                    if (resultado.icone) {
+                        iconeAplicacao = resultado.icone;
+                        console.log('✅ Ícone da aplicação armazenado:', iconeAplicacao);
+                    }
+                    
+                    atualizarPreview();
+                    mostrarMensagem('✅ Aplicação encontrada: ' + resultado.nome, 'success');
+                } else {
+                    document.getElementById('nome_aplicacao').value = '';
+                    document.getElementById('nome_aplicacao').placeholder = 'Aplicação não encontrada';
+                    nomeAppAtual = 'brunno clear';
+                    iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
+                    atualizarPreview();
+                    mostrarMensagem('❌ Aplicação não encontrada', 'error');
+                }
+            } catch (erro) {
+                document.getElementById('nome_aplicacao').value = '';
+                document.getElementById('nome_aplicacao').placeholder = 'Erro ao buscar aplicação';
+                nomeAppAtual = 'brunno clear';
+                iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
+                atualizarPreview();
+                mostrarMensagem('❌ Erro ao buscar aplicação: ' + erro.message, 'error');
+            } finally {
+                loadingIcon.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('id_aplicacao').addEventListener('input', (e) => {
+            let valor = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = valor;
+            
+            if (valor.length >= 17) {
+                setTimeout(() => buscarInfoApp(valor), 800);
+            }
+        });        
+        function atualizarPreview() {
+            const nome = nomeAppAtual || 'brunno clear';
+            const detalhe = document.getElementById('detalhe').value || 'O melhor CL!';
+            const estado = document.getElementById('estado').value || 'No menu principal';
+            let urlImagem = document.getElementById('url_imagem').value;
+
+            if (!urlImagem || urlImagem.trim() === '') {
+                urlImagem = iconeAplicacao;
+            }
+            
+            document.getElementById('preview-nome').textContent = nome;
+            document.getElementById('preview-detalhe').textContent = detalhe;
+            document.getElementById('preview-estado').textContent = estado;
+            
+            let urlFinal = urlImagem;
+            if (urlImagem.includes('cdn.discordapp.com') || urlImagem.includes('cdn.discord.com')) {
+                urlFinal = `/api/proxy-image?url=${encodeURIComponent(urlImagem)}`;
+            }
+            
+            const imgElement = document.getElementById('preview-img');
+            const imgTemp = new Image();
+            
+            imgTemp.onload = function() {
+                imgElement.src = urlFinal;
+            };
+            
+            imgTemp.onerror = function() {
+                console.log('❌ Erro ao carregar imagem:', urlImagem);
+                
+                if (iconeAplicacao && iconeAplicacao !== urlImagem) {
+                    const iconeComProxy = iconeAplicacao.includes('cdn.discordapp.com') || iconeAplicacao.includes('cdn.discord.com')
+                        ? `/api/proxy-image?url=${encodeURIComponent(iconeAplicacao)}`
+                        : iconeAplicacao;
+                    
+                    const imgFallback = new Image();
+                    
+                    imgFallback.onload = function() {
+                        imgElement.src = iconeComProxy;
+                        console.log('✅ Usando ícone da aplicação como fallback');
+                    };
+                    
+                    imgFallback.onerror = function() {
+                        imgElement.src = 'https://i.imgur.com/uTql7fj.jpeg';
+                        console.log('⚠️ Usando imagem padrão');
+                    };
+                    
+                    imgFallback.src = iconeComProxy;
+                } else {
+                    imgElement.src = 'https://i.imgur.com/uTql7fj.jpeg';
+                    console.log('⚠️ Usando imagem padrão');
+                }
+            };
+            
+            imgTemp.src = urlFinal;
+            
+            const containerBotoes = document.getElementById('preview-botoes');
+            const botao1 = document.getElementById('preview-botao-1');
+            const botao2 = document.getElementById('preview-botao-2');
+            
+            let temBotoes = false;
+            
+            for (let i = 1; i <= contadorBotoes; i++) {
+                const textoBotao = document.getElementById(`texto_botao_${i}`)?.value;
+                const urlBotao = document.getElementById(`url_botao_${i}`)?.value;
+                
+                if (i === 1) {
+                    if (textoBotao && urlBotao) {
+                        botao1.textContent = textoBotao;
+                        botao1.classList.remove('hidden');
+                        temBotoes = true;
+                    } else {
+                        botao1.classList.add('hidden');
+                    }
+                } else if (i === 2) {
+                    if (textoBotao && urlBotao) {
+                        botao2.textContent = textoBotao;
+                        botao2.classList.remove('hidden');
+                        temBotoes = true;
+                    } else {
+                        botao2.classList.add('hidden');
+                    }
+                }
+            }
+            
+            if (temBotoes) {
+                containerBotoes.classList.remove('hidden');
+            } else {
+                containerBotoes.classList.add('hidden');
+            }
+        }
+
+        function adicionarEventListeners() {
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', atualizarPreview);
+            });
+        }
+
+        function adicionarBotao() {
+            if (contadorBotoes >= 2) {
+                mostrarMensagem('⚠️ Máximo de 2 botões permitidos pelo Discord', 'error');
+                return;
+            }
+
+            if (contadorBotoes === 0) {
+                const areaVazia = document.getElementById('botoes-vazio');
+                if (areaVazia) {
+                    areaVazia.style.opacity = '0';
+                    areaVazia.style.transform = 'scale(0.95)';
+                    setTimeout(() => areaVazia.remove(), 200);
+                }
+            }
+            
+            contadorBotoes++;
+            const container = document.getElementById('botoes-container');
+            
+            const novoBotao = document.createElement('div');
+            novoBotao.id = `botao-${contadorBotoes}`;
+            novoBotao.className = 'botao-item grid md:grid-cols-2 gap-3 p-4 bg-zinc-800/30 border border-zinc-700/50 rounded-xl relative fade-in';
+            novoBotao.innerHTML = `
+                <input type="text" id="texto_botao_${contadorBotoes}" 
+                       class="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                       placeholder="Nome do botão">
+                <input type="url" id="url_botao_${contadorBotoes}" 
+                       class="w-full px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                       placeholder="https://exemplo.com">
+                <button type="button" onclick="removerBotao(${contadorBotoes})" 
+                        class="remove-btn absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-all">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(novoBotao);
+            
+            novoBotao.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', atualizarPreview);
+            });
+            
+            setTimeout(() => {
+                novoBotao.querySelector('input').focus();
+            }, 100);
+            
+            atualizarPreview();
+            mostrarMensagem(`✅ Botão ${contadorBotoes} adicionado!`, 'success');
+            
+            if (contadorBotoes >= 2) {
+                const btnAdicionar = document.getElementById('btn-adicionar');
+                btnAdicionar.disabled = true;
+                btnAdicionar.style.opacity = '0.5';
+                btnAdicionar.style.cursor = 'not-allowed';
+            }
+        }
+        
+        function removerBotao(numero) {
+            const botao = document.getElementById(`botao-${numero}`);
+            if (botao) {
+                botao.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    botao.remove();
+                    contadorBotoes--;
+                    
+                    const btnAdicionar = document.getElementById('btn-adicionar');
+                    btnAdicionar.disabled = false;
+                    btnAdicionar.style.opacity = '1';
+                    btnAdicionar.style.cursor = 'pointer';
+                    
+                    if (contadorBotoes === 0) {
+                        const container = document.getElementById('botoes-container');
+                        const areaVazia = document.createElement('div');
+                        areaVazia.id = 'botoes-vazio';
+                        areaVazia.className = 'area-vazia text-center py-8 text-zinc-500 text-sm border-2 border-dashed border-zinc-700 rounded-xl fade-in';
+                        areaVazia.innerHTML = `
+                            <svg class="w-10 h-10 mx-auto mb-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <p class="font-medium">Clique em "Adicionar" para criar botões</p>
+                            <p class="text-xs mt-1 text-zinc-600">Máximo 2 botões permitidos pelo Discord</p>
+                        `;
+                        container.appendChild(areaVazia);
+                    }
+                    
+                    atualizarPreview();
+                    mostrarMensagem(`✅ Botão ${numero} removido!`, 'success');
+                }, 300);
+            }
+        }
+
+        async function toggleRPC() {
+            try {
+                const response = await fetch('/api/toggle-rpc', { 
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const resultado = await response.json();
+                
+                if (resultado.sucesso) {
+                    atualizarStatusToggle(resultado.ativo);
+                    mostrarMensagem(
+                        resultado.ativo ? '✅ RPC ativado!' : '🔴 RPC desativado!',
+                        'success'
+                    );
+                }
+            } catch (erro) {
+                mostrarMensagem('❌ Erro ao alterar estado do RPC: ' + erro.message, 'error');
+            }
+        }
+
+        function atualizarStatusToggle(ativo) {
+            const toggle = document.getElementById('rpc-toggle');
+            const badge = document.getElementById('status-badge');
+            
+            if (ativo) {
+                toggle.classList.add('active');
+                badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 w-fit';
+                badge.innerHTML = '<span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span><span>Ativo</span>';
+            } else {
+                toggle.classList.remove('active');
+                badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-red-500/20 text-red-400 border border-red-500/30 w-fit';
+                badge.innerHTML = '<span class="w-2.5 h-2.5 bg-red-400 rounded-full"></span><span>Desativado</span>';
+            }
+        }
+
+        async function carregarConfig() {
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const config = await response.json();
+                
+                const appId = config.rpc?.id_aplicacao || '';
+                document.getElementById('id_aplicacao').value = appId;
+                document.getElementById('estado').value = config.rpc?.estado || '';
+                document.getElementById('detalhe').value = config.rpc?.detalhe || '';
+                document.getElementById('url_imagem').value = config.rpc?.url_imagem || '';
+                
+                const botoes = config.rpc?.botoes || [];
+                for (let i = 0; i < botoes.length && i < 2; i++) {
+                    if (botoes[i].texto && botoes[i].url) {
+                        adicionarBotao();
+                        setTimeout(() => {
+                            document.getElementById(`texto_botao_${i + 1}`).value = botoes[i].texto;
+                            document.getElementById(`url_botao_${i + 1}`).value = botoes[i].url;
+                            atualizarPreview();
+                        }, 100);
+                    }
+                }
+                
+                if (appId && appId.length >= 17) {
+                    await buscarInfoApp(appId);
+                } else if (config.rpc?.nome) {
+                    nomeAppAtual = config.rpc.nome;
+                }
+                
+                const desativado = config.desativar_rpc || false;
+                atualizarStatusToggle(!desativado);
+                
+                setTimeout(() => atualizarPreview(), 100);
+                
+            } catch (erro) {
+                mostrarMensagem('❌ Erro ao carregar configurações: ' + erro.message, 'error');
+            }
+        }
+
+        async function salvarConfig() {
+            const idAplicacao = document.getElementById('id_aplicacao').value.trim();
+            if (!idAplicacao) {
+                mostrarMensagem('❌ ID da aplicação é obrigatório', 'error');
+                return;
+            }
+            
+            if (idAplicacao.length < 17 || !/^\d+$/.test(idAplicacao)) {
+                mostrarMensagem('❌ ID da aplicação inválido (deve ter pelo menos 17 dígitos)', 'error');
+                return;
+            }
+            
+            const urlImagem = document.getElementById('url_imagem').value.trim();
+            if (urlImagem && !validarURLImagem(urlImagem)) {
+                mostrarMensagem('❌ URL da imagem inválida', 'error');
+                return;
+            }
+            
+            const botoes = [];
+            
+            for (let i = 1; i <= contadorBotoes; i++) {
+                const textoBotao = document.getElementById(`texto_botao_${i}`)?.value?.trim();
+                const urlBotao = document.getElementById(`url_botao_${i}`)?.value?.trim();
+                
+                if (textoBotao && urlBotao) {
+                    if (!validarURL(urlBotao)) {
+                        mostrarMensagem(`❌ URL do botão ${i} inválida`, 'error');
+                        return;
+                    }
+                    botoes.push({ texto: textoBotao, url: urlBotao });
+                } else if (textoBotao || urlBotao) {
+                    mostrarMensagem(`❌ Preencha ambos os campos do botão ${i} ou deixe vazios`, 'error');
+                    return;
+                }
+            }
+            
+            const config = {
+                id_aplicacao: idAplicacao,
+                nome: nomeAppAtual || 'brunno clear',
+                estado: document.getElementById('estado').value || '',
+                detalhe: document.getElementById('detalhe').value || '',
+                url_imagem: urlImagem || '',
+                botoes: botoes
+            };
+            
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const resultado = await response.json();
+                
+                if (resultado.sucesso) {
+                    mostrarMensagem('✅ Configurações salvas com sucesso!', 'success');
+                } else {
+                    mostrarMensagem('❌ Erro ao salvar: ' + (resultado.mensagem || 'Erro desconhecido'), 'error');
+                }
+                
+            } catch (erro) {
+                mostrarMensagem('❌ Erro ao salvar configurações: ' + erro.message, 'error');
+            }
+        }
+
+        async function recarregarConfig() {
+            mostrarMensagem('🔄 Recarregando configurações...', 'success');
+            
+            contadorBotoes = 0;
+            const container = document.getElementById('botoes-container');
+            container.innerHTML = `
+                <div id="botoes-vazio" class="area-vazia text-center py-8 text-zinc-500 text-sm border-2 border-dashed border-zinc-700 rounded-xl">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <p class="font-medium">Clique em "Adicionar" para criar botões</p>
+                    <p class="text-xs mt-1 text-zinc-600">Máximo 2 botões permitidos pelo Discord</p>
+                </div>
+            `;
+            
+            const btnAdicionar = document.getElementById('btn-adicionar');
+            btnAdicionar.disabled = false;
+            btnAdicionar.style.opacity = '1';
+            btnAdicionar.style.cursor = 'pointer';
+            
+            await carregarConfig();
+        }
+
+        function mostrarMensagem(texto, tipo) {
+            const mensagem = document.getElementById('mensagem');
+            
+            const icon = tipo === 'success' 
+                ? '<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+                : '<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            
+            mensagem.className = `flex items-center justify-center gap-3 p-4 rounded-xl font-medium transition-all ${
+                tipo === 'success' 
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+            }`;
+            
+            mensagem.innerHTML = `${icon}<span>${texto}</span>`;
+            mensagem.classList.remove('hidden');
+            
+            setTimeout(() => {
+                mensagem.classList.add('hidden');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            adicionarEventListeners();
+            carregarConfig();
+        });
+        
+        if (document.readyState !== 'loading') {
+            adicionarEventListeners();
+            carregarConfig();
+        }
+    </script>
+</body>
+</html>

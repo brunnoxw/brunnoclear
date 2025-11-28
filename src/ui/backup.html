@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Chat Export</title>
+      <!-- Basecoat UI CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@basecoat/ui/dist/basecoat.min.css">
+    
+    <!-- Prism.js CSS para syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+      <!-- Google Fonts - Discord usa gg sans, mas vamos usar alternativas similares -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --discord-dark: #313338;
+            --discord-darker: #2b2d31;
+            --discord-darkest: #1e1f22;
+            --discord-input-bg: #383a40;
+            --discord-text: #dbdee1;
+            --discord-text-muted: #b5bac1;
+            --discord-text-link: #00a8fc;
+            --discord-hover: #404249;
+            --discord-blurple: #5865f2;
+            --discord-green: #23a559;
+            --discord-red: #f23f43;
+            --discord-timestamp: #949ba4;
+            --discord-mention-bg: rgba(88, 101, 242, 0.3);
+            --discord-mention-hover: rgba(88, 101, 242, 0.5);
+            --discord-attachment-bg: #2b2d31;
+            --discord-reply-line: #4e5058;
+            --discord-divider: #3f4147;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--discord-dark);
+            color: var(--discord-text);
+            overflow-x: hidden;
+        }
+
+        .chat-container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--discord-dark);
+        }       
+        .chat-header {
+            height: auto;
+            min-height: 48px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-bottom: 1px solid var(--discord-darkest);
+            background-color: var(--discord-dark);
+            box-shadow: 0 1px 0 rgba(4,4,5,0.2);
+        }
+
+        .backup-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--discord-text);
+            margin-bottom: 4px;
+        }
+
+        .backup-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--discord-text-muted);
+        }
+
+        .backup-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .backup-info-label {
+            font-weight: 600;
+            color: var(--discord-text);
+        }
+
+        .channel-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--discord-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .channel-icon {
+            color: var(--discord-text-muted);
+            font-size: 20px;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background-color: var(--discord-darkest);
+            border: 3px solid var(--discord-dark);
+            border-radius: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background-color: #1a1b1e;
+        }
+
+        .message-group {
+            padding: 2px 16px 2px 72px;
+            position: relative;
+            min-height: 44px;
+        }
+
+        .message-group:hover {
+            background-color: var(--discord-hover);
+        }
+
+        .message-group.first-message {
+            margin-top: 16px;
+            padding-top: 4px;
+        }
+
+        .message-avatar {
+            position: absolute;
+            left: 16px;
+            top: 4px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--discord-blurple), var(--discord-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .message-username {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--discord-text);
+            cursor: pointer;
+        }
+
+        .message-username:hover {
+            text-decoration: underline;
+        }
+
+        .message-timestamp {
+            font-size: 12px;
+            color: var(--discord-timestamp);
+            font-weight: 400;
+        }
+
+        .message-content {
+            font-size: 15px;
+            line-height: 1.375;
+            color: var(--discord-text);
+            word-wrap: break-word;
+        }
+
+        .message-compact {
+            padding: 0 16px 0 72px;
+            min-height: 22px;
+            position: relative;
+        }
+
+        .message-compact:hover {
+            background-color: var(--discord-hover);
+        }
+
+        .message-compact .message-timestamp-hover {
+            position: absolute;
+            left: 16px;
+            font-size: 11px;
+            color: var(--discord-timestamp);
+            opacity: 0;
+            width: 40px;
+            text-align: right;
+            padding-right: 8px;
+        }        .message-compact:hover .message-timestamp-hover {
+            opacity: 1;
+        }
+
+        .mention {
+            background-color: var(--discord-mention-bg);
+            color: var(--discord-blurple);
+            padding: 0 2px;
+            border-radius: 3px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .mention:hover {
+            background-color: var(--discord-mention-hover);
+            color: #ffffff;
+        }
+
+        .message-link {
+            color: var(--discord-text-link);
+            text-decoration: none;
+        }
+
+        .message-link:hover {
+            text-decoration: underline;
+        }
+
+        .message-attachments {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .attachment-image {
+            max-width: 400px;
+            max-height: 300px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .attachment-image:hover {
+            transform: scale(1.02);
+        }
+
+        .attachment-file {
+            background-color: var(--discord-attachment-bg);
+            border: 1px solid var(--discord-darkest);
+            border-radius: 4px;
+            padding: 16px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .attachment-file:hover {
+            background-color: var(--discord-hover);
+        }
+
+        .attachment-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--discord-blurple);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--discord-text-link);
+            margin-bottom: 2px;
+        }
+
+        .attachment-size {
+            font-size: 12px;
+            color: var(--discord-text-muted);
+        }
+
+        .attachment-video {
+            max-width: 400px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .attachment-video video {
+            width: 100%;
+            display: block;
+        }       
+        .image-gallery {
+            display: grid;
+            gap: 4px;
+            max-width: 520px;
+            margin-top: 8px;
+        }
+
+        .image-gallery[data-count="1"] {
+            grid-template-columns: 1fr;
+        }
+
+        .image-gallery[data-count="1"] .gallery-item {
+            aspect-ratio: auto;
+            max-height: 350px;
+        }
+
+        .image-gallery[data-count="1"] .gallery-item img {
+            object-fit: contain;
+            width: auto;
+            max-width: 100%;
+            height: auto;
+            max-height: 350px;
+        }
+
+        .image-gallery[data-count="2"] {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .image-gallery[data-count="3"] {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .image-gallery[data-count="3"] .gallery-item:last-child {
+            grid-column: 1 / -1;
+        }
+
+        .image-gallery[data-count="4"] {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .image-gallery[data-count="5"] {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .image-gallery[data-count="5"] .gallery-item:nth-child(4),
+        .image-gallery[data-count="5"] .gallery-item:nth-child(5) {
+            grid-column: span 1.5;
+        }
+
+        .image-gallery[data-count="6"] {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .image-gallery[data-count="7"],
+        .image-gallery[data-count="8"],
+        .image-gallery[data-count="9"] {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .image-gallery[data-count="10"] {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            aspect-ratio: 1;
+            cursor: pointer;
+            background-color: var(--discord-darkest);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.2s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .gallery-item-more {
+            position: relative;
+        }
+
+        .gallery-item-more::after {
+            content: attr(data-more);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .message-sticker {
+            width: 160px;
+            height: 160px;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .message-sticker img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .message-embed {
+            max-width: 432px;
+            margin-top: 8px;
+            background-color: var(--discord-attachment-bg);
+            border-left: 4px solid var(--discord-blurple);
+            border-radius: 4px;
+            padding: 8px 16px 16px 12px;
+        }
+
+        .embed-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .embed-author-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .embed-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--discord-text-link);
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .embed-title:hover {
+            text-decoration: underline;
+        }
+
+        .embed-description {
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--discord-text);
+            margin-bottom: 8px;
+        }
+
+        .embed-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .embed-field-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .embed-field-value {
+            font-size: 13px;
+            color: var(--discord-text-muted);
+        }
+
+        .embed-thumbnail {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 4px;
+            float: right;
+            margin-left: 16px;
+        }
+
+        .emoji {
+            width: 22px;
+            height: 22px;
+            vertical-align: middle;
+            object-fit: contain;
+        }
+
+        .message-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 16px;
+            color: var(--discord-timestamp);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .message-divider::before,
+        .message-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: var(--discord-divider);
+        }
+
+        .message-divider span {
+            padding: 0 16px;
+        }
+
+        .message-reactions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .reaction {
+            background-color: var(--discord-input-bg);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 3px 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reaction:hover {
+            border-color: var(--discord-text-muted);
+            background-color: var(--discord-hover);
+        }
+
+        .reaction.reacted {
+            background-color: var(--discord-mention-bg);
+            border-color: var(--discord-blurple);
+        }
+
+        .reaction-count {
+            color: var(--discord-text-muted);
+            font-weight: 500;
+        }
+        .code-block {
+            background-color: var(--discord-darkest);
+            border: 1px solid var(--discord-darkest);
+            border-radius: 4px;
+            margin: 4px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .code-block pre {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border-radius: 0 !important;
+        }
+
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+            display: block;
+            padding: 12px !important;
+            overflow-x: auto;
+        }
+
+        .code-block .code-language {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: var(--discord-text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        pre[class*="language-"] {
+            background: var(--discord-darkest) !important;
+            margin: 0 !important;
+            padding: 12px !important;
+        }
+
+        code[class*="language-"] {
+            background: transparent !important;
+            color: #d4d4d4 !important;
+            text-shadow: none !important;
+        }
+
+        .token.comment,
+        .token.prolog,
+        .token.doctype,
+        .token.cdata {
+            color: #6a9955 !important;
+        }
+
+        .token.punctuation {
+            color: #d4d4d4 !important;
+        }
+
+        .token.property,
+        .token.tag,
+        .token.boolean,
+        .token.number,
+        .token.constant,
+        .token.symbol,
+        .token.deleted {
+            color: #b5cea8 !important;
+        }
+
+        .token.selector,
+        .token.attr-name,
+        .token.string,
+        .token.char,
+        .token.builtin,
+        .token.inserted {
+            color: #ce9178 !important;
+        }
+
+        .token.operator,
+        .token.entity,
+        .token.url,
+        .language-css .token.string,
+        .style .token.string {
+            color: #d4d4d4 !important;
+        }
+
+        .token.atrule,
+        .token.attr-value,
+        .token.keyword {
+            color: #c586c0 !important;
+        }
+
+        .token.function,
+        .token.class-name {
+            color: #dcdcaa !important;
+        }
+
+        .token.regex,
+        .token.important,
+        .token.variable {
+            color: #d16969 !important;
+        }        .code-inline {
+            background-color: var(--discord-darkest);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .message-link {
+            color: var(--discord-text-link);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .message-link:hover {
+            text-decoration: underline;
+        }
+
+        .filter-bar {
+            background-color: var(--discord-darker);
+            border-bottom: 1px solid var(--discord-darkest);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--discord-darkest);
+            border: 1px solid transparent;
+            border-radius: 4px;
+            padding: 8px 12px 8px 36px;
+            color: var(--discord-text);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .search-input:focus {
+            border-color: var(--discord-blurple);
+        }
+
+        .search-input::placeholder {
+            color: var(--discord-text-muted);
+        }        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--discord-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .search-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .filter-options {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: var(--discord-text-muted);
+            font-weight: 600;
+        }
+
+        .filter-btn {
+            background-color: var(--discord-input-bg);
+            border: 1px solid transparent;
+            border-radius: 4px;
+            padding: 6px 12px;
+            color: var(--discord-text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--discord-hover);
+            border-color: var(--discord-text-muted);
+        }
+
+        .filter-btn.active {
+            background-color: var(--discord-blurple);
+            border-color: var(--discord-blurple);
+            color: white;
+        }
+
+        .filter-btn .count {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }        .clear-filters {
+            background-color: var(--discord-input-bg);
+            border: 1px solid transparent;
+            color: var(--discord-text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clear-filters:hover {
+            background-color: var(--discord-red);
+            border-color: var(--discord-red);
+            color: white;
+        }
+
+        .clear-filters svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .search-results-info {
+            background-color: var(--discord-input-bg);
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--discord-text-muted);
+            border-bottom: 1px solid var(--discord-darkest);
+            display: none;
+        }
+
+        .search-results-info.show {
+            display: block;
+        }
+
+        .search-results-info strong {
+            color: var(--discord-text);
+            font-weight: 600;
+        }
+
+        .highlight {
+            background-color: rgba(250, 166, 26, 0.3);
+            color: #faa61a;
+            padding: 2px 0;
+            border-radius: 2px;
+        }
+
+        .message-group.hidden,
+        .message-compact.hidden,
+        .message-divider.hidden {
+            display: none;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="backup-title">Backup da DM com o usuário: Alexandre (ID: 123456789012345678)</div>
+            <div class="backup-info">
+                <div class="backup-info-item">
+                    <span class="backup-info-label">📅 Data do backup:</span>
+                    <span>25 de novembro de 2025, 14:30:45</span>
+                </div>
+                <div class="backup-info-item">
+                    <span class="backup-info-label">💬 Total de mensagens:</span>
+                    <span>1.234 mensagens</span>
+                </div>
+                <div class="backup-info-item">
+                    <span class="backup-info-label">📎 Anexos:</span>
+                    <span>42 arquivos</span>
+                </div>
+            </div>
+        </div>        <!-- Barra de Filtros e Pesquisa -->
+        <div class="filter-bar">
+            <div class="search-box">
+                <span class="search-icon">
+                    <i data-lucide="search"></i>
+                </span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Pesquisar mensagens...">
+            </div>
+            <div class="filter-options">
+                <span class="filter-label">Filtrar:</span>
+                <button class="filter-btn" data-filter="images">
+                    <i data-lucide="image"></i> Imagens <span class="count" id="imageCount">0</span>
+                </button>
+                <button class="filter-btn" data-filter="files">
+                    <i data-lucide="paperclip"></i> Arquivos <span class="count" id="fileCount">0</span>
+                </button>
+                <button class="filter-btn" data-filter="code">
+                    <i data-lucide="code"></i> Código <span class="count" id="codeCount">0</span>
+                </button>
+                <button class="filter-btn" data-filter="links">
+                    <i data-lucide="link"></i> Links <span class="count" id="linkCount">0</span>
+                </button>
+                <button class="clear-filters" id="clearFilters">
+                    <i data-lucide="x"></i> Limpar filtros
+                </button>
+            </div>
+        </div>
+
+        <!-- Resultados da Pesquisa -->
+        <div class="search-results-info" id="searchResults">
+            Encontradas <strong id="resultCount">0</strong> mensagens
+        </div>
+
+        <!-- Messages -->
+        <div class="messages-container">
+            <!-- Divider de Data -->
+            <div class="message-divider">
+                <span>25 de novembro de 2025</span>
+            </div>
+
+            <!-- Mensagem 1 - Usuário 1 com avatar -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:32</span>
+                </div>
+                <div class="message-content">
+                    E aí <span class="mention">@Bruno</span>, viu as novas funcionalidades do Discord?
+                </div>
+            </div>            <!-- Mensagem 2 - Usuário 2 responde -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:33</span>
+                </div>
+                <div class="message-content">
+                    Vi sim! A galeria de imagens ficou muito boa 👀
+                </div>
+            </div>
+
+            <!-- Mensagem compacta do usuário 2 -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">14:33</span>
+                <div class="message-content">
+                    Deixa eu te mostrar uns prints
+                </div>
+            </div>            <!-- Mensagem com galeria de imagens -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">14:34</span>
+                <div class="image-gallery" data-count="4">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=1" alt="Imagem 1">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=2" alt="Imagem 2">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=3" alt="Imagem 3">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=4" alt="Imagem 4">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 3 - Usuário 1 reage -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:35</span>
+                </div>
+                <div class="message-content">
+                    Nossa, ficou top demais! 🔥🔥
+                </div>
+            </div>            <!-- Mensagem compacta com código -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">14:36</span>
+                <div class="message-content">
+                    Olha esse código que fiz hoje:
+                </div>
+                <div class="code-block"></div>
+                    <span class="code-language">JavaScript</span>
+                    <pre class="line-numbers"><code class="language-javascript">const discord = require('discord.js');
+const client = new discord.Client();
+
+client.on('ready', () => {
+    console.log('Bot online!');
+});</code></pre>
+                </div>
+            </div>
+
+            <!-- Mensagem 4 - Usuário 2 com arquivo anexado -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:37</span>
+                </div>
+                <div class="message-content">
+                    Maneiro! Vou te mandar um arquivo aqui
+                </div>
+                <div class="message-attachments">
+                    <div class="attachment-file">
+                        <div class="attachment-icon">📄</div>
+                        <div class="attachment-info">
+                            <div class="attachment-name">projeto-discord.zip</div>
+                            <div class="attachment-size">2.5 MB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 5 - Usuário 1 com imagem única -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:38</span>
+                </div>
+                <div class="message-content">
+                    Valeu! Olha essa screenshot:
+                </div>
+                <div class="message-attachments">
+                    <img src="https://picsum.photos/400/300?random=5" alt="Screenshot" class="attachment-image">
+                </div>
+                <div class="message-reactions">
+                    <div class="reaction reacted">
+                        <span>🔥</span>
+                        <span class="reaction-count">2</span>
+                    </div>
+                    <div class="reaction">
+                        <span>👍</span>
+                        <span class="reaction-count">1</span>
+                    </div>
+                    <div class="reaction">
+                        <span>❤️</span>
+                        <span class="reaction-count">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 6 - Usuário 2 com vídeo -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:40</span>
+                </div>
+                <div class="message-content">
+                    Achei esse vídeo sobre React
+                </div>
+                <div class="message-attachments">
+                    <div class="attachment-video">
+                        <video controls poster="https://picsum.photos/400/225?random=6">
+                            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                            Seu navegador não suporta vídeos.
+                        </video>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 7 - Usuário 1 com embed -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:42</span>
+                </div>
+                <div class="message-content">
+                    https://github.com/discord/discord-api-docs
+                </div>
+                <div class="message-embed">
+                    <div class="embed-author">
+                        <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub" class="embed-author-icon">
+                        <span>GitHub</span>
+                    </div>
+                    <div class="embed-title">discord/discord-api-docs</div>
+                    <div class="embed-description">
+                        Official Discord API Documentation. Contribute to discord/discord-api-docs development by creating an account on GitHub.
+                    </div>
+                    <div class="embed-fields">
+                        <div>
+                            <div class="embed-field-name">Language</div>
+                            <div class="embed-field-value">JavaScript</div>
+                        </div>
+                        <div>
+                            <div class="embed-field-name">Stars</div>
+                            <div class="embed-field-value">⭐ 2.8k</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 8 - Usuário 2 com sticker/figurinha -->
+            <div class="message-group first-message"></div>
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:43</span>
+                </div>
+                <div class="message-sticker">
+                    <img src="https://em-content.zobj.net/source/animated-noto-color-emoji/356/fire_1f525.gif" alt="Sticker">
+                </div>
+            </div>
+
+            <!-- Mensagem 9 - Usuário 1 com menção e código inline -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:45</span>
+                </div>
+                <div class="message-content">
+                    <span class="mention">@Bruno</span> testa esse comando: <span class="code-inline">npm install discord.js</span>
+                </div>
+            </div>            <!-- Mensagem 10 - Usuário 2 -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:46</span>
+                </div>
+                <div class="message-content">
+                    Beleza! Já instalei aqui ✅
+                </div>
+            </div><!-- Mensagem compacta -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">14:47</span>
+                <div class="message-content">
+                    Olha essas referências que encontrei:
+                </div>
+                <div class="image-gallery" data-count="3">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=7" alt="Ref 1">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=8" alt="Ref 2">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=9" alt="Ref 3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensagem 11 - Usuário 1 finalizando -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">14:48</span>
+                </div>
+                <div class="message-content">
+                    Perfeito! Agora é só partir pro código 💻
+                </div>
+                <div class="message-reactions">
+                    <div class="reaction reacted">
+                        <span>🚀</span>
+                        <span class="reaction-count">2</span>
+                    </div>
+                    <div class="reaction reacted">
+                        <span>💪</span>
+                        <span class="reaction-count">2</span>
+                    </div>
+                </div>
+            </div>            <!-- Mensagem 12 - Usuário 2 final -->
+            <div class="message-group first-message"></div>
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">14:49</span>
+                </div>
+                <div class="message-content">
+                    Bora! 🎯
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="message-divider">
+                <span>Exemplos de Galerias</span>
+            </div>
+
+            <!-- Exemplo: 1 imagem -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">15:00</span>
+                </div>
+                <div class="message-content">
+                    Exemplo com 1 imagem:
+                </div>
+                <div class="image-gallery" data-count="1">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/600/400?random=10" alt="Imagem única">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exemplo: 2 imagens -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">15:01</span>
+                </div>
+                <div class="message-content">
+                    Exemplo com 2 imagens:
+                </div>
+                <div class="image-gallery" data-count="2">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=11" alt="Img 1">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=12" alt="Img 2">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exemplo: 5 imagens -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">15:02</span>
+                </div>
+                <div class="message-content">
+                    Exemplo com 5 imagens:
+                </div>
+                <div class="image-gallery" data-count="5">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=13" alt="Img 1">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=14" alt="Img 2">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=15" alt="Img 3">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=16" alt="Img 4">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=17" alt="Img 5">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exemplo: 6 imagens -->
+            <div class="message-group first-message">
+                <div class="message-avatar" style="background: linear-gradient(135deg, #f23f43, #faa61a);">B</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #5865f2;">Bruno</span>
+                    <span class="message-timestamp">15:03</span>
+                </div>
+                <div class="message-content">
+                    Exemplo com 6 imagens:
+                </div>
+                <div class="image-gallery" data-count="6">
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=18" alt="Img 1">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=19" alt="Img 2">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=20" alt="Img 3">
+                    </div>
+                    <div class="gallery-item"></div>
+                        <img src="https://picsum.photos/300/300?random=21" alt="Img 4">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=22" alt="Img 5">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="https://picsum.photos/300/300?random=23" alt="Img 6">
+                    </div>                </div>
+            </div>
+
+            <!-- Exemplo: Mensagem com código Python -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">15:04</span>
+                <div class="message-content">
+                    Aqui está o script Python que prometi:
+                </div>
+                <div class="code-block">
+                    <span class="code-language">Python</span>
+                    <pre class="line-numbers"><code class="language-python">def processar_dados(dados):
+    """Processa uma lista de dados e retorna a soma"""
+    total = 0
+    for item in dados:
+        if isinstance(item, (int, float)):
+            total += item
+    return total
+
+# Exemplo de uso
+numeros = [1, 2, 3, 4, 5]
+resultado = processar_dados(numeros)
+print(f"Resultado: {resultado}")</code></pre>
+                </div>
+            </div>
+
+            <!-- Exemplo: Mensagem com JSON -->
+            <div class="message-compact">
+                <span class="message-timestamp-hover">15:05</span>
+                <div class="message-content">
+                    E aqui está a configuração em JSON:
+                </div>
+                <div class="code-block">
+                    <span class="code-language">JSON</span>
+                    <pre class="line-numbers"><code class="language-json">{
+  "nome": "BrunnoClear",
+  "versao": "2.0.0",
+  "configuracoes": {
+    "cor_painel": "#5865f2",
+    "rpc_ativado": true,
+    "modo_debug": false
+  },
+  "recursos": ["backup", "elevador", "coleira"]
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Exemplo: Mensagem final -->
+            <div class="message-group first-message">
+                <div class="message-avatar">A</div>
+                <div class="message-header">
+                    <span class="message-username" style="color: #3ba55d;">Alexandre</span>
+                    <span class="message-timestamp">15:06</span>
+                </div>
+                <div class="message-content">
+                    Ficou perfeito! O sistema de syntax highlighting está funcionando muito bem 👏✨
+                </div>
+            </div>
+        </div>
+    </div>    <!-- Basecoat UI JS (opcional, se necessário) -->
+    <script src="https://unpkg.com/@basecoat/ui/dist/basecoat.min.js"></script>
+    
+    <!-- Prism.js para syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>    <!-- Script de Filtro e Pesquisa -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputPesquisa = document.getElementById('searchInput');
+            const resultadosPesquisa = document.getElementById('searchResults');
+            const contagemResultados = document.getElementById('resultCount');
+            const botoesFiltro = document.querySelectorAll('.filter-btn');
+            const botaoLimparFiltros = document.getElementById('clearFilters');
+            
+            const contagemImagens = document.getElementById('imageCount');
+            const contagemArquivos = document.getElementById('fileCount');
+            const contagemCodigo = document.getElementById('codeCount');
+            const contagemLinks = document.getElementById('linkCount');
+
+            const todasMensagens = document.querySelectorAll('.message-group, .message-compact');
+            const todosDivisores = document.querySelectorAll('.message-divider');
+
+            let filtroAtivo = null;            function contarElementos() {
+                let imagens = 0, arquivos = 0, codigos = 0, links = 0;
+                
+                todasMensagens.forEach(msg => {
+                    if (msg.querySelector('.image-gallery, .attachment-image')) imagens++;
+                    if (msg.querySelector('.attachment-file')) arquivos++;
+                    if (msg.querySelector('.code-block')) codigos++;
+                    if (msg.querySelector('.message-embed')) links++;
+                });
+
+                contagemImagens.textContent = imagens;
+                contagemArquivos.textContent = arquivos;
+                contagemCodigo.textContent = codigos;
+                contagemLinks.textContent = links;
+            }            function removerDestaques() {
+                document.querySelectorAll('.highlight').forEach(el => {
+                    const parent = el.parentNode;
+                    parent.replaceChild(document.createTextNode(el.textContent), el);
+                    parent.normalize();
+                });
+            }
+
+            function destacarTexto(texto, termoPesquisa) {
+                if (!termoPesquisa) return texto;
+                
+                const regex = new RegExp(`(${termoPesquisa})`, 'gi');
+                return texto.replace(regex, '<span class="highlight">$1</span>');
+            }            function realizarPesquisa() {
+                const termoPesquisa = inputPesquisa.value.trim().toLowerCase();
+                removerDestaques();
+                
+                if (!termoPesquisa && !filtroAtivo) {
+                    todasMensagens.forEach(msg => msg.classList.remove('hidden'));
+                    todosDivisores.forEach(div => div.classList.remove('hidden'));
+                    resultadosPesquisa.classList.remove('show');
+                    return;
+                }
+
+                let contagemVisivel = 0;
+                const mensagensParaMostrar = new Set();                todasMensagens.forEach(msg => {
+                    let deveMostrar = true;
+
+                    if (filtroAtivo) {
+                        deveMostrar = false;
+                        
+                        if (filtroAtivo === 'images' && msg.querySelector('.image-gallery, .attachment-image')) {
+                            deveMostrar = true;
+                        } else if (filtroAtivo === 'files' && msg.querySelector('.attachment-file')) {
+                            deveMostrar = true;
+                        } else if (filtroAtivo === 'code' && msg.querySelector('.code-block')) {
+                            deveMostrar = true;
+                        } else if (filtroAtivo === 'links' && msg.querySelector('.message-embed')) {
+                            deveMostrar = true;
+                        }
+                    }
+
+                    if (deveMostrar && termoPesquisa) {
+                        const conteudo = msg.querySelector('.message-content');
+                        if (conteudo) {
+                            const texto = conteudo.textContent.toLowerCase();
+                            if (texto.includes(termoPesquisa)) {
+                                const conteudoTexto = conteudo.textContent;
+                                const textoDestacado = destacarTexto(conteudoTexto, termoPesquisa);
+                                conteudo.innerHTML = textoDestacado;
+                            } else {
+                                deveMostrar = false;
+                            }
+                        } else {
+                            deveMostrar = false;
+                        }
+                    }
+
+                    if (deveMostrar) {
+                        mensagensParaMostrar.add(msg);
+                        contagemVisivel++;
+                    }
+                });                mensagensParaMostrar.forEach(msg => {
+                    if (msg.classList.contains('message-compact')) {
+                        let elementoAnterior = msg.previousElementSibling;
+                        
+                        while (elementoAnterior) {
+                            if (elementoAnterior.classList.contains('message-group') && 
+                                elementoAnterior.classList.contains('first-message')) {
+                                mensagensParaMostrar.add(elementoAnterior);
+                                break;
+                            }
+                            if (elementoAnterior.classList.contains('message-compact')) {
+                                mensagensParaMostrar.add(elementoAnterior);
+                            }
+                            elementoAnterior = elementoAnterior.previousElementSibling;
+                        }
+                    }
+                });
+
+                todasMensagens.forEach(msg => {
+                    if (mensagensParaMostrar.has(msg)) {
+                        msg.classList.remove('hidden');
+                    } else {
+                        msg.classList.add('hidden');
+                    }
+                });
+
+                todosDivisores.forEach(divisor => {
+                    let temProximoVisivel = false;
+                    let proximoElemento = divisor.nextElementSibling;
+                    
+                    while (proximoElemento && !temProximoVisivel) {
+                        if ((proximoElemento.classList.contains('message-group') || 
+                             proximoElemento.classList.contains('message-compact')) &&
+                            !proximoElemento.classList.contains('hidden')) {
+                            temProximoVisivel = true;
+                        }
+                        proximoElemento = proximoElemento.nextElementSibling;
+                    }
+
+                    if (temProximoVisivel) {
+                        divisor.classList.remove('hidden');
+                    } else {
+                        divisor.classList.add('hidden');
+                    }
+                });
+
+                if (termoPesquisa || filtroAtivo) {
+                    contagemResultados.textContent = contagemVisivel;
+                    resultadosPesquisa.classList.add('show');
+                } else {
+                    resultadosPesquisa.classList.remove('show');
+                }
+            }            inputPesquisa.addEventListener('input', realizarPesquisa);
+
+            botoesFiltro.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filtro = this.dataset.filter;
+                    
+                    if (filtroAtivo === filtro) {
+                        filtroAtivo = null;
+                        this.classList.remove('active');
+                    } else {
+                        botoesFiltro.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        filtroAtivo = filtro;
+                    }
+                    
+                    realizarPesquisa();
+                });
+            });
+
+            botaoLimparFiltros.addEventListener('click', function() {
+                inputPesquisa.value = '';
+                filtroAtivo = null;
+                botoesFiltro.forEach(btn => btn.classList.remove('active'));
+                realizarPesquisa();
+            });
+
+            inputPesquisa.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    realizarPesquisa();
+                }
+            });          
+            contarElementos();
+        });
+        
+        lucide.createIcons();
+    </script>
+</body>
+</html>
