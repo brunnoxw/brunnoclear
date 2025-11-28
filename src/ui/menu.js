@@ -80,14 +80,22 @@ async function exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel 
 		const corVermelho = Cores.vermelho;
 		const reset = Cores.reset;
 
-		console.log(`        ${corPrincipal}${'─'.repeat(55)}${reset}`);
+		const separador = '─'.repeat(55);
+		const separadorColorido = corPrincipal === 'rainbow' ? textoRainbow(separador) : `${corPrincipal}${separador}${reset}`;
+		
+		const texto18 = "'18'";
+		const textoUpdate = "'!update'";
+		const texto18Colorido = corPrincipal === 'rainbow' ? textoRainbow(texto18) : `${corPrincipal}${texto18}${reset}`;
+		const textoUpdateColorido = corPrincipal === 'rainbow' ? textoRainbow(textoUpdate) : `${corPrincipal}${textoUpdate}${reset}`;
+
+		console.log(`        ${separadorColorido}`);
 		console.log(
-			`        ${Simbolos.info} ${corPrincipal}Nova versão disponível:${reset} ${corVermelho}v${atualizacaoDisponivel.versaoAtual}${reset} → ${corVerde}v${atualizacaoDisponivel.versaoNova}${reset}`
+			`        ${Simbolos.info} Nova versão disponível: ${corVermelho}v${atualizacaoDisponivel.versaoAtual}${reset} → ${corVerde}v${atualizacaoDisponivel.versaoNova}${reset}`
 		);
 		console.log(
-			`        ${Simbolos.dica} Digite ${corPrincipal}'18'${reset} ou ${corPrincipal}'!update'${reset} para atualizar`
+			`        ${Simbolos.dica} Digite ${texto18Colorido} ou ${textoUpdateColorido} para atualizar`
 		);
-		console.log(`        ${corPrincipal}${'─'.repeat(55)}${reset}\n`);
+		console.log(`        ${separadorColorido}\n`);
 	}
 
 	const opcoes = [

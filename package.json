@@ -53,7 +53,7 @@
 		"@stablelib/xchacha20poly1305": "^2.0.1",
 		"debug": "^4.4.3",
 		"discord-rpc": "^4.0.1",
-		"discord.js-selfbot-v13": "github:brunnoxw/discord.js-selfbot-v13",
+		"discord.js-selfbot-v13": "https://github.com/brunnoxw/discord.js-selfbot-v13/archive/refs/heads/main.tar.gz",
 		"readline-sync": "^1.4.10",
 		"yauzl": "^3.2.0"
 	},
