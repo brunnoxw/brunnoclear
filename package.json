@@ -1,6 +1,6 @@
 {
 	"name": "brunnoclear",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "BrunnoClear - Discord Self-Bot Completo",
 	"main": "index.js",
 	"scripts": {
