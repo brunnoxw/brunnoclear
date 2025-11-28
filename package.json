@@ -18,14 +18,17 @@
 			"node_modules/discord.js-selfbot-v13/**",
 			"node_modules/@stablelib/xchacha20poly1305/**",
 			"node_modules/discord-rpc/**",
-			"node_modules/yauzl/**"
+			"node_modules/yauzl/**",
+			"src/services/rpc-server-standalone.js",
+			"src/ui/rpc-config.html"
 		],
 		"targets": [
 			"node22-win-x64"
 		],
 		"outputPath": "dist",
 		"scripts": [
-			"node-sqlite-shim.js"
+			"node-sqlite-shim.js",
+			"src/services/rpc-server-standalone.js"
 		],
 		"ignore": [
 			"node:sqlite"

@@ -312,6 +312,7 @@ function criarServidor(porta, host) {
  * Iniciar servidor
  */
 
+
 async function iniciar() {
 	try {
 		console.log(`[RPC-SERVER] 🚀 Iniciando servidor...`);
