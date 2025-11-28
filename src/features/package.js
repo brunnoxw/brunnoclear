@@ -220,10 +220,11 @@ async function limparMensagensDM(
 	let frameIndex = 0;
 	let mensagensBuscadas = 0;
 	let mensagensUsuario = 0;
+	
 	const textoInicial =
 		corPrincipal === 'rainbow'
-			? `        ${textoRainbow('📥 Buscando mensagens')}\n`
-			: `        ${cor}📥 Buscando mensagens${reset}\n`;
+			? `        ${textoRainbow('📥 Buscando mensagens com')} ${nomeCanal}\n`
+			: `        ${cor}📥 Buscando mensagens com${reset} ${nomeCanal}\n`;
 
 	await exibirProgressoCompleto(
 		contador,
@@ -254,6 +255,7 @@ async function limparMensagensDM(
 			mensagensBuscadas = totalBuscadas;
 		});
 	}
+	
 	const mensagensOriginais = await buscarTodasMensagens(cliente, canal.id, (totalBuscadas, totalFiltradas) => {
 		if (!fazerBackup) {
 			mensagensBuscadas = totalBuscadas;
@@ -402,6 +404,7 @@ async function limparMensagensDM(
 			}
 		}
 	}
+	
 	if (totalMensagens === 0) {
 		const textoSemMensagens =
 			corPrincipal === 'rainbow'
@@ -428,6 +431,7 @@ async function limparMensagensDM(
 		await canal.delete().catch(() => {});
 		return 0;
 	}
+	
 	for (let i = 0; i < mensagensOriginais.length; i++) {
 		await sleep(delay);
 		await mensagensOriginais[i]
@@ -437,8 +441,8 @@ async function limparMensagensDM(
 				if (mensagensApagadas % 2 === 0 || mensagensApagadas === totalMensagens) {
 					const textoApagando =
 						corPrincipal === 'rainbow'
-							? `        ${textoRainbow('🗑️  Apagando mensagens')}\n`
-							: `        ${cor}🗑️  Apagando mensagens${reset}\n`;
+							? `        ${textoRainbow('🗑️  Apagando mensagens com')} ${nomeCanal}\n`
+							: `        ${cor}🗑️  Apagando mensagens com${reset} ${nomeCanal}\n`;
 
 					await exibirProgressoDuplo(
 						contador,
@@ -642,17 +646,31 @@ async function apagarPackage(cliente, corPrincipal) {
 	const totalUsuarios = idsUsuarios.length;
 
 	for (const idUsuario of idsUsuarios) {
-		const usuario = await cliente.users.fetch(idUsuario).catch(() => null);
-
-		if (!usuario) {
+		let canal;
+		try {
+			const dmData = await cliente.api.users(cliente.user.id).channels.post({
+				data: {
+					recipients: [idUsuario]
+				}
+			});
+			
+			canal = cliente.channels.cache.get(dmData.id);
+			
+			if (!canal) {
+				canal = await cliente.channels.fetch(dmData.id).catch(() => null);
+			}
+			
+			if (!canal) {
+				throw new Error('Nao foi possivel obter o canal');
+			}
+		} catch (erro) {
 			continue;
 		}
-
-		const canal = await usuario.createDM().catch(() => null);
 
 		if (!canal) {
 			continue;
 		}
+		
 		contador++;
 		const mensagensApagadas = await limparMensagensDM(
 			cliente,
@@ -665,6 +683,7 @@ async function apagarPackage(cliente, corPrincipal) {
 		);
 		totalMensagensApagadas += mensagensApagadas;
 	}
+	
 	UIComponents.limparTela();
 	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
 	UIComponents.exibirLinhaVazia();
