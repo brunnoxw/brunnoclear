@@ -9,7 +9,7 @@ tokens.txt
 token.txt
 .env
 .env.local
-
+.package_progress.json
 # Backups gerados (podem conter dados privados)
 backups/
 backup/

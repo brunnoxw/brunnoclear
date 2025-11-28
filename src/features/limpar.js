@@ -49,23 +49,72 @@ async function limparDMUnica(cliente, corPrincipal) {
 	const config = obterConfig();
 	const delay = parseFloat(config.delay) || 1;
 	let totalFiltradas = 0;
+	const cor = Cores[corPrincipal] || '';
+	const reset = Cores.reset;
+	const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+	let frameIndex = 0;
+	let mensagensBuscadas = 0;
 
 	const fazerBackup = await confirmarBackup(corPrincipal);
+
+	const textoInicial =
+		corPrincipal === 'rainbow'
+			? `        ${textoRainbow('📥 Buscando mensagens com')} ${nomeUsuario}\n`
+			: `        ${cor}📥 Buscando mensagens com${reset} ${nomeUsuario}\n`;
+
+	await exibirProgressoCompleto(
+		0,
+		1,
+		'BrunnoClear | Limpar DM única',
+		'preparando',
+		textoInicial,
+		cliente,
+		corPrincipal
+	);
+
+	const loadingInterval = setInterval(() => {
+		const frame = frames[frameIndex % frames.length];
+		const textoCarregando =
+			corPrincipal === 'rainbow'
+				? textoRainbow(`Coletando mensagens... ${mensagensBuscadas} encontradas`)
+				: `${cor}Coletando mensagens...${reset} ${mensagensBuscadas} encontradas`;
+
+		process.stdout.clearLine(0);
+		process.stdout.cursorTo(0);
+		process.stdout.write(`        ${frame} ${textoCarregando}   `);
+		frameIndex++;
+	}, 80);
 
 	let todasMensagensParaBackup = [];
 	if (fazerBackup) {
 		const { buscarTodasMensagensParaBackup } = require('../services/discord');
-		todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, canal.id);
+		todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, canal.id, (totalBuscadas) => {
+			mensagensBuscadas = totalBuscadas;
+		});
 	}
 
 	/**
 	 * Modo incremental: busca e apaga mensagens conforme encontra
 	 */
 	if (config.esperar_fetch === false) {
+		let primeiroLote = true;
 		await buscarMensagensIncremental(
 			canal,
 			async (mensagens, total) => {
 				totalFiltradas = total;
+
+				if (primeiroLote) {
+					clearInterval(loadingInterval);
+					process.stdout.clearLine(0);
+					process.stdout.cursorTo(0);
+					console.log(''); 
+					primeiroLote = false;
+				}
+
+				const textoApagando =
+					corPrincipal === 'rainbow'
+						? `        ${textoRainbow('🗑️ Apagando mensagens de')} ${nomeUsuario}\n`
+						: `        ${cor}🗑️ Apagando mensagens de${reset} ${nomeUsuario}\n`;
 
 				for (const msg of mensagens) {
 					await sleep(delay);
@@ -78,7 +127,7 @@ async function limparDMUnica(cliente, corPrincipal) {
 								totalFiltradas,
 								'BrunnoClear | Limpar DM única',
 								'mensagens removidas',
-								`        ${corPrincipal === 'rainbow' ? textoRainbow('Apagando com') : corPrincipal + 'Apagando com' + reset} ${nomeUsuario}\n`,
+								textoApagando,
 								cliente,
 								corPrincipal
 							);
@@ -97,8 +146,27 @@ async function limparDMUnica(cliente, corPrincipal) {
 		/**
 		 * Modo completo: busca todas as mensagens antes de apagar
 		 */
-		const mensagens = await buscarTodasMensagens(cliente, canal.id);
+		const mensagens = await buscarTodasMensagens(cliente, canal.id, (totalBuscadas, totalFiltradas) => {
+			if (!fazerBackup) {
+				mensagensBuscadas = totalBuscadas;
+			}
+		});
 		totalFiltradas = mensagens.length;
+
+		clearInterval(loadingInterval);
+		process.stdout.clearLine(0);
+		process.stdout.cursorTo(0);
+		console.log('');
+
+		if (totalFiltradas === 0) {
+			await exibirErro('Você não tem mensagens aí.');
+			return;
+		}
+
+		const textoApagando =
+			corPrincipal === 'rainbow'
+				? `        ${textoRainbow('🗑️ Apagando mensagens de')} ${nomeUsuario}\n`
+				: `        ${cor}🗑️ Apagando mensagens de${reset} ${nomeUsuario}\n`;
 
 		for (const msg of mensagens) {
 			await sleep(delay);
@@ -111,7 +179,7 @@ async function limparDMUnica(cliente, corPrincipal) {
 						totalFiltradas,
 						'BrunnoClear | Limpar DM única',
 						'mensagens removidas',
-						`        ${corPrincipal === 'rainbow' ? textoRainbow('Apagando com') : corPrincipal + 'Apagando com' + reset} ${nomeUsuario}\n`,
+						textoApagando,
 						cliente,
 						corPrincipal
 					);
@@ -124,6 +192,10 @@ async function limparDMUnica(cliente, corPrincipal) {
 				.catch(() => {});
 		}
 	}
+
+	clearInterval(loadingInterval);
+	process.stdout.clearLine(0);
+	process.stdout.cursorTo(0);
 
 	if (fazerBackup && todasMensagensParaBackup.length > 0) {
 		UIComponents.limparTela();
@@ -181,22 +253,72 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 		baixarAnexos = opcaoAnexos === '1';
 	}
 
+	const cor = Cores[corPrincipal] || '';
+	const reset = Cores.reset;
+	const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
 	for (const dm of dms) {
 		let contadorMsgs = 0;
 		let totalFiltradas = 0;
+		let frameIndex = 0;
+		let mensagensBuscadas = 0;
 		const nomeDestinatario = dm.recipient?.globalName || dm.recipient?.username;
+
+		const textoInicial =
+			corPrincipal === 'rainbow'
+				? `        ${textoRainbow('📥 Buscando mensagens com')} ${nomeDestinatario}\n`
+				: `        ${cor}📥 Buscando mensagens com${reset} ${nomeDestinatario}\n`;
+
+		await exibirProgressoCompleto(
+			dms.indexOf(dm),
+			dms.length,
+			'BrunnoClear | Limpar DMs abertas',
+			'DMs processadas',
+			textoInicial,
+			cliente,
+			corPrincipal
+		);
+
+		const loadingInterval = setInterval(() => {
+			const frame = frames[frameIndex % frames.length];
+			const textoCarregando =
+				corPrincipal === 'rainbow'
+					? textoRainbow(`Coletando mensagens... ${mensagensBuscadas} encontradas`)
+					: `${cor}Coletando mensagens...${reset} ${mensagensBuscadas} encontradas`;
+
+			process.stdout.clearLine(0);
+			process.stdout.cursorTo(0);
+			process.stdout.write(`        ${frame} ${textoCarregando}   `);
+			frameIndex++;
+		}, 80);
 
 		let todasMensagensParaBackup = [];
 		if (fazerBackup) {
 			const { buscarTodasMensagensParaBackup } = require('../services/discord');
-			todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, dm.id);
+			todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, dm.id, (totalBuscadas) => {
+				mensagensBuscadas = totalBuscadas;
+			});
 		}
 
 		if (config.esperar_fetch === false) {
+			let primeiroLote = true;
 			await buscarMensagensIncremental(
 				dm,
 				async (mensagens, total) => {
 					totalFiltradas = total;
+
+					if (primeiroLote) {
+						clearInterval(loadingInterval);
+						process.stdout.clearLine(0);
+						process.stdout.cursorTo(0);
+						console.log(''); 
+						primeiroLote = false;
+					}
+
+					const textoApagando =
+						corPrincipal === 'rainbow'
+							? `        ${textoRainbow('🗑️ Apagando mensagens de')} ${nomeDestinatario}\n`
+							: `        ${cor}🗑️ Apagando mensagens de${reset} ${nomeDestinatario}\n`;
 
 					for (const msg of mensagens) {
 						await sleep(delay);
@@ -209,7 +331,7 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 									totalFiltradas,
 									'BrunnoClear | Limpar DMs abertas',
 									'mensagens removidas',
-									`        ${corPrincipal === 'rainbow' ? textoRainbow('Apagando com') : corPrincipal + 'Apagando com' + reset} ${nomeDestinatario}\n`,
+									textoApagando,
 									cliente,
 									corPrincipal
 								);
@@ -225,10 +347,24 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 				cliente
 			);
 		} else {
-			const mensagens = await buscarTodasMensagens(cliente, dm.id);
+			const mensagens = await buscarTodasMensagens(cliente, dm.id, (totalBuscadas, totalFiltradas) => {
+				if (!fazerBackup) {
+					mensagensBuscadas = totalBuscadas;
+				}
+			});
 			totalFiltradas = mensagens.length;
 
+			clearInterval(loadingInterval);
+			process.stdout.clearLine(0);
+			process.stdout.cursorTo(0);
+			console.log('');
+
 			if (totalFiltradas === 0) continue;
+
+			const textoApagando =
+				corPrincipal === 'rainbow'
+					? `        ${textoRainbow('🗑️ Apagando mensagens de')} ${nomeDestinatario}\n`
+					: `        ${cor}🗑️ Apagando mensagens de${reset} ${nomeDestinatario}\n`;
 
 			for (const msg of mensagens) {
 				await sleep(delay);
@@ -241,7 +377,7 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 							totalFiltradas,
 							'BrunnoClear | Limpar DMs abertas',
 							'mensagens removidas',
-							`        ${corPrincipal === 'rainbow' ? textoRainbow('Apagando com') : corPrincipal + 'Apagando com' + reset} ${nomeDestinatario}\n`,
+							textoApagando,
 							cliente,
 							corPrincipal
 						);
@@ -254,6 +390,11 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 					.catch(() => {});
 			}
 		}
+
+		clearInterval(loadingInterval);
+		process.stdout.clearLine(0);
+		process.stdout.cursorTo(0);
+
 		if (fazerBackup && todasMensagensParaBackup.length > 0) {
 			const fs = require('fs');
 			const path = require('path');

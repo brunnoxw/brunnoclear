@@ -13,6 +13,60 @@ const { confirmarBackup, criarBackup } = require('../services/backup');
 const UIComponents = require('../utils/components');
 const CONSTANTS = require('../config/constants');
 
+const PROGRESS_FILE = path.join(process.cwd(), '.package_progress.json');
+
+/**
+ * Salva o progresso da limpeza
+ * @param {string} zipPath - Caminho do ZIP
+ * @param {Array<string>} idsProcessados - IDs já processados
+ * @param {number} totalMensagensApagadas - Total de mensagens apagadas
+ */
+function salvarProgresso(zipPath, idsProcessados, totalMensagensApagadas) {
+	try {
+		const progresso = {
+			zipPath: zipPath,
+			timestamp: Date.now(),
+			idsProcessados: idsProcessados,
+			totalMensagensApagadas: totalMensagensApagadas
+		};
+		fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progresso, null, 2));
+	} catch (erro) {
+		console.error('Erro ao salvar progresso:', erro.message);
+	}
+}
+
+/**
+ * Carrega o progresso salvo
+ * @param {string} zipPath - Caminho do ZIP atual
+ * @returns {Object|null} Progresso salvo ou null
+ */
+function carregarProgresso(zipPath) {
+	try {
+		if (fs.existsSync(PROGRESS_FILE)) {
+			const progresso = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'));
+			if (progresso.zipPath === zipPath) {
+				return progresso;
+			}
+		}
+	} catch (erro) {
+		console.error('Erro ao carregar progresso:', erro.message);
+	}
+	return null;
+}
+
+/**
+ * Limpa o arquivo de progresso
+ */
+function limparProgresso() {
+	try {
+		if (fs.existsSync(PROGRESS_FILE)) {
+			fs.unlinkSync(PROGRESS_FILE);
+		}
+	} catch (erro) {
+		console.error('Erro ao limpar progresso:', erro.message);
+	}
+}
+
 /**
  * Seleciona arquivo ZIP via diálogo do Windows
  * @returns {Promise<string>} Caminho do arquivo selecionado
@@ -584,6 +638,52 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirSucesso(`${idsUsuarios.length} usuários encontrados no package`, corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
+	const progressoSalvo = carregarProgresso(zipPath);
+	let idsParaProcessar = idsUsuarios;
+	let totalMensagensApagadas = 0;
+	
+	if (progressoSalvo && progressoSalvo.idsProcessados.length > 0) {
+		const idsRestantes = idsUsuarios.filter(id => !progressoSalvo.idsProcessados.includes(id));
+		
+		UIComponents.exibirInfo(`Progresso anterior encontrado!`, corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		console.log(`        ${UIComponents.textoColorido('Já processados:', corPrincipal, false)} ${progressoSalvo.idsProcessados.length} usuários`);
+		console.log(`        ${UIComponents.textoColorido('Restantes:', corPrincipal, false)} ${idsRestantes.length} usuários`);
+		console.log(`        ${UIComponents.textoColorido('Mensagens apagadas:', corPrincipal, false)} ${progressoSalvo.totalMensagensApagadas}`);
+		UIComponents.exibirLinhaVazia();
+		
+		UIComponents.exibirOpcaoMenu('1', 'Continuar de onde parou', corPrincipal);
+		UIComponents.exibirOpcaoMenu('2', 'Recomeçar do início', corPrincipal);
+		UIComponents.exibirOpcaoMenu('3', 'Cancelar', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		
+		const opcaoProgresso = readlineSync.question(UIComponents.obterPrompt());
+		
+		if (opcaoProgresso === '1') {
+			idsParaProcessar = idsRestantes;
+			totalMensagensApagadas = progressoSalvo.totalMensagensApagadas;
+			UIComponents.limparTela();
+			exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+			UIComponents.exibirSucesso('Continuando do progresso salvo!', corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			await sleep(1.5);
+		} else if (opcaoProgresso === '2') {
+			limparProgresso();
+			UIComponents.limparTela();
+			exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+			UIComponents.exibirInfo('Recomeçando do início...', corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			await sleep(1.5);
+		} else {
+			return;
+		}
+	}
+	
+	UIComponents.limparTela();
+	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+	UIComponents.exibirSucesso(`${idsParaProcessar.length} usuários para processar`, corPrincipal);
+	UIComponents.exibirLinhaVazia();
+
 	console.log(`        ${UIComponents.textoColorido('Deseja continuar?', corPrincipal, false)}`);
 	UIComponents.exibirLinhaVazia();
 
@@ -642,10 +742,10 @@ async function apagarPackage(cliente, corPrincipal) {
 	await sleep(2);
 
 	let contador = 0;
-	let totalMensagensApagadas = 0;
-	const totalUsuarios = idsUsuarios.length;
+	const totalUsuarios = idsParaProcessar.length;
+	const idsProcessados = progressoSalvo ? [...progressoSalvo.idsProcessados] : [];
 
-	for (const idUsuario of idsUsuarios) {
+	for (const idUsuario of idsParaProcessar) {
 		let canal;
 		try {
 			const dmData = await cliente.api.users(cliente.user.id).channels.post({
@@ -682,7 +782,12 @@ async function apagarPackage(cliente, corPrincipal) {
 			baixarAnexos
 		);
 		totalMensagensApagadas += mensagensApagadas;
+		
+		idsProcessados.push(idUsuario);
+		salvarProgresso(zipPath, idsProcessados, totalMensagensApagadas);
 	}
+	
+	limparProgresso();
 	
 	UIComponents.limparTela();
 	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
@@ -691,7 +796,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirLinhaVazia();
 
 	console.log(
-		`        ${UIComponents.textoColorido('DMs processadas:', corPrincipal, false)} ${contador}/${totalUsuarios}`
+		`        ${UIComponents.textoColorido('DMs processadas:', corPrincipal, false)} ${contador}/${idsUsuarios.length}`
 	);
 	console.log(
 		`        ${UIComponents.textoColorido('Mensagens apagadas:', corPrincipal, false)} ${totalMensagensApagadas}`
