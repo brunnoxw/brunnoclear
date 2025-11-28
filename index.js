@@ -1,13 +1,5 @@
 #!/usr/bin/env node
 
-if (process.platform === 'win32') {
-	const { execSync } = require('child_process');
-	try {
-		execSync('chcp 65001 >nul 2>&1', { shell: true });
-		process.stdout.setDefaultEncoding('utf8');
-	} catch (e) {}
-}
-
 const { Client } = require('discord.js-selfbot-v13');
 const readlineSync = require('readline-sync');
 const { obterConfig, criarConfig, adicionarToken } = require('./src/config/configuracao');

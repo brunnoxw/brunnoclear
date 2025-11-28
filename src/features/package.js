@@ -589,6 +589,7 @@ async function apagarPackage(cliente, corPrincipal) {
 
 	const confirmar = readlineSync.question(UIComponents.obterPrompt());
 	if (confirmar !== '1') {
+		await sleep(2);
 		return;
 	}
 
@@ -611,6 +612,8 @@ async function apagarPackage(cliente, corPrincipal) {
 	const opcaoBackup = readlineSync.question(UIComponents.obterPrompt());
 	const fazerBackup = opcaoBackup === '1';
 	let baixarAnexos = false;
+	
+	
 	if (fazerBackup) {
 		UIComponents.limparTela();
 		exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
@@ -631,6 +634,8 @@ async function apagarPackage(cliente, corPrincipal) {
 		const opcaoAnexos = readlineSync.question(UIComponents.obterPrompt());
 		baixarAnexos = opcaoAnexos === '1';
 	}
+	
+	await sleep(2);
 
 	let contador = 0;
 	let totalMensagensApagadas = 0;

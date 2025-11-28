@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 >nul
 title BrunnoClear - Transformar em Executavel
 color 0B
 
