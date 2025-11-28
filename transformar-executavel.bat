@@ -68,28 +68,16 @@ echo.
 echo Executando: pkg . --output dist/brunnoclear.exe
 echo.
 
-call pkg . --output dist/brunnoclear.exe 2>&1
+call pkg . --output dist/brunnoclear.exe
 
-if %errorlevel% neq 0 (
+if not exist dist\brunnoclear.exe (
     echo.
-    echo [ERRO] Erro ao gerar executavel (Codigo: %errorlevel%)
+    echo [ERRO] Executavel nao foi criado!
     echo.
     echo Possiveis solucoes:
     echo - Verifique se todas as dependencias estao instaladas
     echo - Execute: npm install
     echo - Tente rodar: npm run build
-    echo.
-    pause
-    exit /b 1
-)
-
-REM Verifica se o executavel foi criado
-if not exist dist\brunnoclear.exe (
-    echo.
-    echo [ERRO] Executavel nao foi criado!
-    echo.
-    echo Tente executar manualmente:
-    echo npm run build
     echo.
     pause
     exit /b 1

@@ -1,3 +1,20 @@
 node:sqlite
 node:*
 *.node
+
+# Ignorar arquivos de atualização
+.update/
+.update
+
+# Ignorar arquivos de desenvolvimento
+.git/
+.vscode/
+*.log
+*.tmp
+
+# Ignorar arquivos de build
+dist/
+build/
+
+# Ignorar configurações pessoais (se existir)
+

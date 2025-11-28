@@ -10,7 +10,10 @@ const REPO_OWNER = 'brunnoxw';
 const REPO_NAME = 'brunnoclear';
 const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
 const PACKAGE_JSON_PATH = path.join(__dirname, '../../package.json');
-const UPDATE_DIR = path.join(__dirname, '../../.update');
+
+function getUpdateDir() {
+	return path.join(__dirname, '../../.update');
+}
 
 const GITHUB_TOKEN = null;
 
@@ -449,6 +452,7 @@ async function instalarAtualizacao(info) {
 	try {
 		console.log(`\n${Simbolos.carregando} Iniciando processo de atualização...\n`);
 
+		const UPDATE_DIR = getUpdateDir();
 		if (!fs.existsSync(UPDATE_DIR)) {
 			fs.mkdirSync(UPDATE_DIR, { recursive: true });
 		}
@@ -538,6 +542,7 @@ async function instalarAtualizacao(info) {
 		console.log(`${Simbolos.aviso} Tente atualizar manualmente em: ${info.htmlUrl}`);
 
 		try {
+			const UPDATE_DIR = getUpdateDir();
 			if (fs.existsSync(UPDATE_DIR)) {
 				fs.rmSync(UPDATE_DIR, { recursive: true, force: true });
 			}
