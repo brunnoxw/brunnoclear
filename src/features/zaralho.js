@@ -73,12 +73,12 @@ async function menuZaralho(client, corPrincipal) {
 			return voltarMenu();
 		}
 
-		const membroBot = guild.members.me;
+	const membroBot = guild.members.me;
 
-		if (!membroBot.permissions.has('ManageNicknames')) {
-			await exibirErro('O bot não tem permissão "Gerenciar Apelidos" no servidor.');
-			return voltarMenu();
-		}
+	if (!membroBot.permissions.has('MANAGE_NICKNAMES')) {
+		await exibirErro('O bot não tem permissão "Gerenciar Apelidos" no servidor.');
+		return voltarMenu();
+	}
 
 		if (membro.roles.highest.position >= membroBot.roles.highest.position) {
 			await exibirErro('O usuário tem cargo superior ou igual ao bot. Não é possível gerenciar seu nickname.');
@@ -268,12 +268,12 @@ async function menuZaralho(client, corPrincipal) {
 			return voltarMenu();
 		}
 
-		const membroBot = guild.members.me;
+	const membroBot = guild.members.me;
 
-		if (!membroBot.permissions.has('ManageMessages')) {
-			await exibirErro('O bot não tem permissão "Gerenciar Mensagens" no servidor.');
-			return voltarMenu();
-		}
+	if (!membroBot.permissions.has('MANAGE_MESSAGES')) {
+		await exibirErro('O bot não tem permissão "Gerenciar Mensagens" no servidor.');
+		return voltarMenu();
+	}
 
 		let deveContinuar = true;
 		let mensagensApagadas = 0;
@@ -327,15 +327,14 @@ async function menuZaralho(client, corPrincipal) {
 			if (message.author.id !== idUsuario) return;
 			if (message.guild?.id !== guild.id) return;
 
-			try {
-				const canal = message.channel;
-				const permissoesCanal = canal.permissionsFor(membroBot);
+			try {			const canal = message.channel;
+			const permissoesCanal = canal.permissionsFor(membroBot);
 
-				if (!permissoesCanal || !permissoesCanal.has('ManageMessages')) {
-					ultimaAcao = `❌ Sem permissão em #${canal.name}`;
-					exibirTelaBloqueio();
-					return;
-				}
+			if (!permissoesCanal || !permissoesCanal.has('MANAGE_MESSAGES')) {
+				ultimaAcao = `❌ Sem permissão em #${canal.name}`;
+				exibirTelaBloqueio();
+				return;
+			}
 
 				await message.delete();
 				mensagensApagadas++;

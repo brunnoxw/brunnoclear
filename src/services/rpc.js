@@ -1,9 +1,58 @@
 const RPC = require('discord-rpc');
+const https = require('https');
 const { obterConfig } = require('../config/configuracao');
 const { version } = require('../../package.json');
 
 let clienteRPC = null;
 let rpcAtivo = false;
+let iconeAplicacaoCache = null;
+let ultimoIdAplicacao = null; // Rastreia o último ID da aplicação
+
+/**
+ * Busca o ícone da aplicação Discord
+ */
+async function buscarIconeAplicacao(appId) {
+	return new Promise((resolve) => {
+		const url = `https://discord.com/api/v10/applications/${appId}/rpc`;
+
+		const req = https.get(
+			url,
+			{
+				headers: {
+					'User-Agent': 'BrunnoClear-RPC/1.0'
+				},
+				timeout: 3000
+			},
+			(res) => {
+				let data = '';
+				res.on('data', (chunk) => (data += chunk));
+				res.on('end', () => {
+					try {
+						if (res.statusCode === 200) {
+							const appData = JSON.parse(data);
+							if (appData.icon) {
+								const icone = `https://cdn.discordapp.com/app-icons/${appId}/${appData.icon}.png`;
+								resolve(icone);
+							} else {
+								resolve('https://i.imgur.com/uTql7fj.jpeg');
+							}
+						} else {
+							resolve('https://i.imgur.com/uTql7fj.jpeg');
+						}
+					} catch (e) {
+						resolve('https://i.imgur.com/uTql7fj.jpeg');
+					}
+				});
+			}
+		);
+
+		req.on('error', () => resolve('https://i.imgur.com/uTql7fj.jpeg'));
+		req.on('timeout', () => {
+			req.destroy();
+			resolve('https://i.imgur.com/uTql7fj.jpeg');
+		});
+	});
+}
 
 /**
  * Inicializa o Rich Presence do Discord
@@ -22,6 +71,8 @@ async function inicializarRPC() {
 		RPC.register(idCliente);
 		await clienteRPC.login({ clientId: idCliente });
 
+		iconeAplicacaoCache = null;
+
 		rpcAtivo = true;
 		return true;
 	} catch (erro) {
@@ -34,14 +85,31 @@ async function inicializarRPC() {
 /**
  * Obtém o tema atual do RPC
  */
-function obterTemaRPC() {
+async function obterTemaRPC() {
 	const config = obterConfig();
+	const idAplicacao = config.rpc.id_aplicacao || '1441501260984356907';
+	
+	let imagemGrande = config.rpc.url_imagem;
+	
+	if (!imagemGrande || imagemGrande.trim() === '') {
+		if (ultimoIdAplicacao !== idAplicacao) {
+			iconeAplicacaoCache = null;
+			ultimoIdAplicacao = idAplicacao;
+		}
+		
+		if (iconeAplicacaoCache) {
+			imagemGrande = iconeAplicacaoCache;
+		} else {
+			iconeAplicacaoCache = await buscarIconeAplicacao(idAplicacao);
+			imagemGrande = iconeAplicacaoCache;
+		}
+	}
 
 	return {
 		nome: config.rpc.nome || 'BrunnoClear',
 		estado: config.rpc.estado || `v${version}`,
 		detalhe: config.rpc.detalhe || 'No menu principal',
-		imagemGrande: config.rpc.url_imagem || 'https://i.imgur.com/uTql7fj.jpeg',
+		imagemGrande: imagemGrande || 'https://i.imgur.com/uTql7fj.jpeg',
 		textoBotao: config.rpc.texto_botao,
 		urlBotao: config.rpc.url_botao
 	};
@@ -61,7 +129,7 @@ async function atualizarPresenca(presenca = {}) {
 		return;
 	}
 	try {
-		const tema = obterTemaRPC();
+		const tema = await obterTemaRPC();
 		const atividade = {
 			state: presenca.estado || tema.estado || `v${version}`,
 			details: presenca.detalhe || tema.detalhe,

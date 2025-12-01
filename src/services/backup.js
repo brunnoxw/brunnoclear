@@ -808,10 +808,12 @@ async function criarBackup(
 
 	const { gerarTemplateBase, gerarHeader, gerarBarraFiltros, gerarSearchResults, gerarScripts } = gerarTemplateHTML();
 
+	const mensagensOrdenadas = [...mensagens].reverse();
+
 	let htmlMensagens = '        <div class="messages-container">\n';
-	for (let i = 0; i < mensagens.length; i++) {
-		const msg = mensagens[i];
-		const msgAnterior = i > 0 ? mensagens[i - 1] : null;
+	for (let i = 0; i < mensagensOrdenadas.length; i++) {
+		const msg = mensagensOrdenadas[i];
+		const msgAnterior = i > 0 ? mensagensOrdenadas[i - 1] : null;
 		htmlMensagens += gerarHTMLMensagem(msg, msgAnterior, anexosMap);
 	}
 	htmlMensagens += '\n        </div>';

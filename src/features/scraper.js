@@ -167,7 +167,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	}
 	if (canalOrigem.guild) {
 		const permissoes = canalOrigem.permissionsFor(canalOrigem.guild.members.me);
-		if (!permissoes.has(['ViewChannel', 'ReadMessageHistory'])) {
+		if (!permissoes.has(['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY'])) {
 			UIComponents.limparTela();
 			exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
 			UIComponents.exibirLinhaVazia();
@@ -234,15 +234,15 @@ async function scraperIcons(cliente, corPrincipal) {
 			await sleep(CONSTANTS.DELAYS.MESSAGE_DISPLAY);
 			return;
 		}
-		if (canalDestino.guild) {
-			const permissoes = canalDestino.permissionsFor(canalDestino.guild.members.me);
-			if (!permissoes.has(['ViewChannel', 'SendMessages', 'AttachFiles'])) {
-				UIComponents.limparTela();
-				exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
-				UIComponents.exibirLinhaVazia();
-				UIComponents.exibirErroMensagem('Sem permissão para enviar arquivos neste canal!', corPrincipal);
-				UIComponents.exibirLinhaVazia();
-				await sleep(CONSTANTS.DELAYS.LONG_PAUSE);
+	if (canalDestino.guild) {
+		const permissoes = canalDestino.permissionsFor(canalDestino.guild.members.me);
+		if (!permissoes.has(['VIEW_CHANNEL', 'SEND_MESSAGES', 'ATTACH_FILES'])) {
+			UIComponents.limparTela();
+			exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			UIComponents.exibirErroMensagem('Sem permissão para enviar arquivos neste canal!', corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			await sleep(CONSTANTS.DELAYS.LONG_PAUSE);
 				return;
 			}
 		}

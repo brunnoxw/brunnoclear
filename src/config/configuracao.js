@@ -37,7 +37,7 @@ function obterConfigPadrao() {
 			botoes: []
 		},
 		cor_painel: 'rainbow',
-		delay: '1',
+		delay: '0.7',
 		esperar_fetch: true,
 		desativar_rpc: false
 	};

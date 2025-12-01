@@ -340,7 +340,7 @@ async function limparMensagensDM(
 		);
 
 		await atualizarPresenca({
-			estado: `${contador}/${total} DMs`,
+			estado: `${contador}/${total} DMs processadas`,
 			detalhe: `Package - ${Math.round((contador / total) * 100)}%`,
 			imagemPequenaTexto: `DM vazia`
 		});
@@ -383,9 +383,9 @@ async function limparMensagensDM(
 			);
 
 			await atualizarPresenca({
-				estado: `${contador}/${total} DMs`,
-				detalhe: `Backup já existe`,
-				imagemPequenaTexto: `Pulando`
+				estado: `${contador}/${total} DMs processadas`,
+				detalhe: `Backup já existe - pulando`,
+				imagemPequenaTexto: `Package ${Math.round((contador / total) * 100)}%`
 			});
 
 			await sleep(0.5);
@@ -407,9 +407,9 @@ async function limparMensagensDM(
 			);
 
 			await atualizarPresenca({
-				estado: `${contador}/${total} DMs`,
-				detalhe: `Criando backup`,
-				imagemPequenaTexto: `${totalMensagensBackup} msgs`
+				estado: `${contador}/${total} DMs processadas`,
+				detalhe: `Criando backup (${totalMensagensBackup} msgs)`,
+				imagemPequenaTexto: `Package ${Math.round((contador / total) * 100)}%`
 			});
 
 			try {
@@ -476,9 +476,9 @@ async function limparMensagensDM(
 		);
 
 		await atualizarPresenca({
-			estado: `${contador}/${total} DMs`,
+			estado: `${contador}/${total} DMs processadas`,
 			detalhe: `Package - ${Math.round((contador / total) * 100)}%`,
-			imagemPequenaTexto: `Completo`
+			imagemPequenaTexto: `Sem mensagens suas`
 		});
 
 		await sleep(0.8);
@@ -508,10 +508,13 @@ async function limparMensagensDM(
 						corPrincipal
 					);
 
+					const progressoDM = Math.round((mensagensApagadas / totalMensagens) * 100);
+					const progressoPackage = Math.round((contador / total) * 100);
+
 					await atualizarPresenca({
-						estado: `${contador}/${total} DMs`,
-						detalhe: `Package - ${Math.round((contador / total) * 100)}%`,
-						imagemPequenaTexto: `${mensagensApagadas}/${totalMensagens} msgs`
+						estado: `${mensagensApagadas} mensagens de ${totalMensagens} apagadas - [${progressoDM}%]`,
+						detalhe: `Package - ${progressoPackage}% (${contador}/${total})`,
+						imagemPequenaTexto: `DM ${contador}/${total}`
 					});
 				}
 			})

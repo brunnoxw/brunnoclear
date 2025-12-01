@@ -43,7 +43,7 @@ function iniciarMonitoramentoMenu() {
 				detalhe: 'No menu principal'
 			}).catch(() => {});
 		}
-	}, 10000);
+	}, 5000); // Atualiza a cada 5 segundos
 }
 //texte 123456
 function pararMonitoramentoMenu() {
@@ -74,6 +74,8 @@ async function configurarRichPresence(cliente, corPrincipal) {
 		const { spawn } = require('child_process');
 		const path = require('path');
 		const readline = require('readline');
+
+		sairMenuPrincipal();
 
 		UIComponents.limparTela();
 		UIComponents.definirTituloJanela(CONSTANTS.WINDOW_TITLES.CONFIGURE_RPC);
@@ -116,11 +118,17 @@ async function configurarRichPresence(cliente, corPrincipal) {
 			UIComponents.exibirInfo('Fechando servidor de configuração...', corPrincipal);
 			child.kill();
 			rl.close();
+			atualizarPresenca({
+				detalhe: 'No menu principal'
+			}).catch(() => {});
 			resolve('configurado');
 		});
 
 		child.on('exit', () => {
 			rl.close();
+			atualizarPresenca({
+				detalhe: 'No menu principal'
+			}).catch(() => {});
 			resolve('fechado');
 		});
 

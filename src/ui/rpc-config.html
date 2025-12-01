@@ -422,7 +422,8 @@
         let tempoInicio = Date.now();
         let nomeAppAtual = '';
         let iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
-        let contadorBotoes = 0; 
+        let contadorBotoes = 0;
+        let idAplicacaoConfig = ''; 
 
         function validarURLImagem(url) {
             if (!url) return true;
@@ -480,13 +481,29 @@
                 
                 if (resultado.sucesso) {
                     nomeAppAtual = resultado.nome;
+                    
+                    const idMudou = idAplicacaoConfig !== appId;
+                    
                     document.getElementById('nome_aplicacao').value = resultado.nome;
+                    
+                    if (idMudou) {
+                        document.getElementById('detalhe').value = '';
+                        document.getElementById('estado').value = '';
+                        document.getElementById('url_imagem').value = '';
+                        
+                        while (contadorBotoes > 0) {
+                            removerBotao(contadorBotoes);
+                        }
+                    }
+                    
                     document.getElementById('nome_aplicacao').classList.remove('text-zinc-400');
                     document.getElementById('nome_aplicacao').classList.add('text-white');
                     
                     if (resultado.icone) {
                         iconeAplicacao = resultado.icone;
                         console.log('✅ Ícone da aplicação armazenado:', iconeAplicacao);
+                    } else {
+                        iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
                     }
                     
                     atualizarPreview();
@@ -523,19 +540,17 @@
             const nome = nomeAppAtual || 'brunno clear';
             const detalhe = document.getElementById('detalhe').value || 'O melhor CL!';
             const estado = document.getElementById('estado').value || 'No menu principal';
-            let urlImagem = document.getElementById('url_imagem').value;
+            let urlImagem = document.getElementById('url_imagem').value.trim();
 
-            if (!urlImagem || urlImagem.trim() === '') {
-                urlImagem = iconeAplicacao;
-            }
+            let imagemParaUsar = urlImagem || iconeAplicacao;
             
             document.getElementById('preview-nome').textContent = nome;
             document.getElementById('preview-detalhe').textContent = detalhe;
             document.getElementById('preview-estado').textContent = estado;
             
-            let urlFinal = urlImagem;
-            if (urlImagem.includes('cdn.discordapp.com') || urlImagem.includes('cdn.discord.com')) {
-                urlFinal = `/api/proxy-image?url=${encodeURIComponent(urlImagem)}`;
+            let urlFinal = imagemParaUsar;
+            if (imagemParaUsar.includes('cdn.discordapp.com') || imagemParaUsar.includes('cdn.discord.com')) {
+                urlFinal = `/api/proxy-image?url=${encodeURIComponent(imagemParaUsar)}`;
             }
             
             const imgElement = document.getElementById('preview-img');
@@ -543,12 +558,13 @@
             
             imgTemp.onload = function() {
                 imgElement.src = urlFinal;
+                console.log('✅ Imagem carregada:', imagemParaUsar === iconeAplicacao ? 'ícone da aplicação' : 'URL personalizada');
             };
             
             imgTemp.onerror = function() {
-                console.log('❌ Erro ao carregar imagem:', urlImagem);
+                console.log('❌ Erro ao carregar imagem:', imagemParaUsar);
                 
-                if (iconeAplicacao && iconeAplicacao !== urlImagem) {
+                if (iconeAplicacao && imagemParaUsar !== iconeAplicacao) {
                     const iconeComProxy = iconeAplicacao.includes('cdn.discordapp.com') || iconeAplicacao.includes('cdn.discord.com')
                         ? `/api/proxy-image?url=${encodeURIComponent(iconeAplicacao)}`
                         : iconeAplicacao;
@@ -562,7 +578,7 @@
                     
                     imgFallback.onerror = function() {
                         imgElement.src = 'https://i.imgur.com/uTql7fj.jpeg';
-                        console.log('⚠️ Usando imagem padrão');
+                        console.log('⚠️ Usando imagem padrão (última tentativa)');
                     };
                     
                     imgFallback.src = iconeComProxy;
@@ -767,6 +783,8 @@
                 const config = await response.json();
                 
                 const appId = config.rpc?.id_aplicacao || '';
+                idAplicacaoConfig = appId; 
+                
                 document.getElementById('id_aplicacao').value = appId;
                 document.getElementById('estado').value = config.rpc?.estado || '';
                 document.getElementById('detalhe').value = config.rpc?.detalhe || '';
