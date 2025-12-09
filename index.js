@@ -26,33 +26,16 @@ const { menuZaralho } = require('./src/features/zaralho');
 const UIComponents = require('./src/utils/components');
 const CONSTANTS = require('./src/config/constants');
 const { version: VERSAO_ATUAL } = require('./package.json');
+const { backgroundTaskManager } = require('./src/utils/backgroundTasks');
 
 let cliente = null;
 let corPrincipal = null;
 let estaNoMenuPrincipal = false;
-let monitoramentoInterval = null;
 let atualizacaoDisponivel = null;
-function iniciarMonitoramentoMenu() {
-	if (monitoramentoInterval) {
-		clearInterval(monitoramentoInterval);
-	}
 
-	monitoramentoInterval = setInterval(() => {
-		if (estaNoMenuPrincipal) {
-			atualizarPresenca({
-				detalhe: 'No menu principal'
-			}).catch(() => {});
-		}
-	}, 5000); // Atualiza a cada 5 segundos
-}
-//texte 123456
-function pararMonitoramentoMenu() {
-	if (monitoramentoInterval) {
-		clearInterval(monitoramentoInterval);
-		monitoramentoInterval = null;
-	}
-}
-
+/**
+ * Atualiza o RPC para o estado do menu principal
+ */
 function entrarMenuPrincipal() {
 	estaNoMenuPrincipal = true;
 	atualizarPresenca({
@@ -60,6 +43,9 @@ function entrarMenuPrincipal() {
 	}).catch(() => {});
 }
 
+/**
+ * Marca que saiu do menu principal
+ */
 function sairMenuPrincipal() {
 	estaNoMenuPrincipal = false;
 }
@@ -118,17 +104,21 @@ async function configurarRichPresence(cliente, corPrincipal) {
 			UIComponents.exibirInfo('Fechando servidor de configuração...', corPrincipal);
 			child.kill();
 			rl.close();
+			
 			atualizarPresenca({
 				detalhe: 'No menu principal'
 			}).catch(() => {});
+			
 			resolve('configurado');
 		});
 
 		child.on('exit', () => {
 			rl.close();
+			
 			atualizarPresenca({
 				detalhe: 'No menu principal'
 			}).catch(() => {});
+			
 			resolve('fechado');
 		});
 
@@ -559,9 +549,15 @@ async function conectarComToken(token) {
 		UIComponents.exibirSeparador(corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		await sleep(2);
+	await sleep(2);
+	
+	await atualizarPresenca({
+		detalhe: 'No menu principal'
+	}).catch((e) => {
+		console.log('Erro ao atualizar RPC:', e.message);
+	});
 
-		await menuPrincipal();
+	await menuPrincipal();
 	} catch (erro) {
 		UIComponents.limparTela();
 		UIComponents.exibirSeparador(corPrincipal);
@@ -597,16 +593,85 @@ async function conectarComToken(token) {
 	}
 }
 
-async function menuPrincipal() {
-	iniciarMonitoramentoMenu();
+/**
+ * Menu para gerenciar tarefas em segundo plano
+ */
+async function menuGerenciarTarefas() {
+	const tarefas = backgroundTaskManager.getTasks();
+	
+	if (tarefas.length === 0) {
+		UIComponents.limparTela();
+		UIComponents.exibirInfo('Nenhuma tarefa em segundo plano ativa', corPrincipal);
+		await sleep(2);
+		return;
+	}
 
-	if (!atualizacaoDisponivel) {
-		const { verificarAtualizacao } = require('./src/services/atualizacao');
-		const infoAtualizacao = await verificarAtualizacao(true);
-		if (infoAtualizacao && infoAtualizacao.disponivel) {
-			atualizacaoDisponivel = infoAtualizacao;
+	UIComponents.limparTela();
+	UIComponents.definirTituloJanela('BrunnoClear | Tarefas em Segundo Plano');
+	
+	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+	
+	UIComponents.exibirCabecalho('          TAREFAS EM SEGUNDO PLANO', corPrincipal);
+	UIComponents.exibirLinhaVazia();
+	
+	tarefas.forEach((task, index) => {
+		const tempoDecorrido = Math.floor((Date.now() - task.startedAt) / 1000);
+		const minutos = Math.floor(tempoDecorrido / 60);
+		const segundos = tempoDecorrido % 60;
+		const tempoFormatado = `${minutos}m ${segundos}s`;
+		
+		console.log(`        ${Simbolos.info} [${task.id}] ${task.name}`);
+		console.log(`           Tempo ativo: ${tempoFormatado}`);
+		if (task.data) {
+			if (task.data.canal) console.log(`           Canal: ${task.data.canal}`);
+			if (task.data.guild) console.log(`           Servidor: ${task.data.guild}`);
+			if (task.data.usuarios) console.log(`           Usuários: ${task.data.usuarios.length}`);
+		}
+		UIComponents.exibirLinhaVazia();
+	});
+	
+	UIComponents.exibirSeparador(corPrincipal);
+	UIComponents.exibirLinhaVazia();
+	UIComponents.exibirOpcaoMenu('1', 'Cancelar uma tarefa específica', corPrincipal);
+	UIComponents.exibirOpcaoMenu('2', 'Cancelar todas as tarefas', corPrincipal);
+	UIComponents.exibirOpcaoMenu('0', 'Voltar', corPrincipal);
+	UIComponents.exibirLinhaVazia();
+	
+	const opcao = readlineSync.question(UIComponents.obterPrompt());
+	
+	if (opcao === '1') {
+		UIComponents.exibirLinhaVazia();
+		console.log('        Digite o ID da tarefa para cancelar:');
+		const taskId = parseInt(readlineSync.question(UIComponents.obterPrompt()));
+		
+		const task = backgroundTaskManager.getTask(taskId);
+		if (task) {
+			await backgroundTaskManager.removeTask(taskId);
+			UIComponents.limparTela();
+			UIComponents.exibirSucesso(`Tarefa "${task.name}" cancelada!`, corPrincipal);
+			await sleep(2);
+		} else {
+			await exibirErro('ID de tarefa inválido.');
+		}
+	} else if (opcao === '2') {
+		UIComponents.limparTela();
+		UIComponents.exibirAviso('Tem certeza que deseja cancelar todas as tarefas?', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		UIComponents.exibirOpcaoMenu('1', 'Sim', corPrincipal);
+		UIComponents.exibirOpcaoMenu('2', 'Não', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		
+		const confirma = readlineSync.question(UIComponents.obterPrompt());
+		if (confirma === '1') {
+			await backgroundTaskManager.removeAllTasks();
+			UIComponents.limparTela();
+			UIComponents.exibirSucesso('Todas as tarefas foram canceladas!', corPrincipal);
+			await sleep(2);
 		}
 	}
+}
+
+async function menuPrincipal() {
 
 	const acoesMenu = [
 		{ id: '1', action: () => limparDMUnica(cliente, corPrincipal) },
@@ -651,6 +716,7 @@ async function menuPrincipal() {
 		{ id: '15', action: () => menuConfiguracao(cliente, corPrincipal) },
 		{ id: '16', action: () => menuZaralho(cliente, corPrincipal) },
 		{ id: '99', action: () => process.exit(0) },
+		{ id: 'bg', action: () => menuGerenciarTarefas() },
 		{
 			id: '18',
 			action: async () => {
@@ -670,6 +736,7 @@ async function menuPrincipal() {
 			}
 		}
 	];
+	
 	while (true) {
 		entrarMenuPrincipal();
 

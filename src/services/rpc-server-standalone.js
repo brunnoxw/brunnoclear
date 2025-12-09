@@ -196,8 +196,18 @@ function criarServidor(porta, host) {
 
 					salvarConfig(configAtual);
 
+					try {
+						const rpcModule = require('./rpc');
+						if (rpcModule && typeof rpcModule.atualizarPresenca === 'function') {
+							rpcModule.atualizarPresenca().catch(() => {});
+							console.log(`[RPC-SERVER] ✅ RPC atualizado automaticamente`);
+						}
+					} catch (e) {
+						console.log(`[RPC-SERVER] ⚠️ Não foi possível atualizar RPC (normal se não estiver rodando)`);
+					}
+
 					res.writeHead(200, { 'Content-Type': 'application/json' });
-					res.end(JSON.stringify({ sucesso: true, mensagem: 'Configuração salva!' }));
+					res.end(JSON.stringify({ sucesso: true, mensagem: 'Configuração salva e aplicada!' }));
 					console.log(`[RPC-SERVER] ✅ Configuração salva`);
 				} catch (erro) {
 					console.error(`[RPC-SERVER] ❌ Erro ao salvar:`, erro);

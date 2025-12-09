@@ -1,68 +1,68 @@
 {
-	"name": "brunnoclear",
-	"version": "1.0.6",
-	"description": "BrunnoClear - Discord Self-Bot Completo",
-	"main": "index.js",
-	"scripts": {
-		"start": "node index.js",
-		"build": "pkg . --output dist/brunnoclear.exe",
-		"build:win": "pkg . --output dist/brunnoclear-win.exe",
-		"build:linux": "pkg . --targets node22-linux-x64 --output dist/brunnoclear-linux",
-		"build:mac": "pkg . --targets node22-macos-x64 --output dist/brunnoclear-macos",
-		"release": "release.bat",
-		"format": "biome format --write ."
-	},
-	"bin": "index.js",
-	"pkg": {
-		"assets": [
-			"node_modules/discord.js-selfbot-v13/**",
-			"node_modules/@stablelib/xchacha20poly1305/**",
-			"node_modules/discord-rpc/**",
-			"node_modules/yauzl/**",
-			"src/services/rpc-server-standalone.js",
-			"src/ui/rpc-config.html"
-		],
-		"targets": [
-			"node22-win-x64"
-		],
-		"outputPath": "dist",
-		"scripts": [
-			"node-sqlite-shim.js",
-			"src/services/rpc-server-standalone.js"
-		],
-		"ignore": [
-			"node:sqlite"
-		]
-	},
-	"keywords": [
-		"discord",
-		"selfbot",
-		"discord-bot",
-		"discord-selfbot",
-		"message-cleaner",
-		"discord-tools"
-	],
-	"author": "BrunnoClear",
-	"license": "SEE LICENSE IN LICENSE",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/brunnoxw/brunnoclear.git"
-	},
-	"bugs": {
-		"url": "https://github.com/brunnoxw/brunnoclear/issues"
-	},
-	"homepage": "https://github.com/brunnoxw/brunnoclear#readme",
-	"dependencies": {
-		"@stablelib/xchacha20poly1305": "^2.0.1",
-		"debug": "^4.4.3",
-		"discord-rpc": "^4.0.1",
-		"discord.js-selfbot-v13": "https://github.com/brunnoxw/discord.js-selfbot-v13/archive/refs/heads/main.tar.gz",
-		"readline-sync": "^1.4.10",
-		"yauzl": "^3.2.0"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.8",
-		"@yao-pkg/pkg": "^5.15.0",
-		"patch-package": "^8.0.1"
-	}
+  "name": "brunnoclear",
+  "version": "1.0.7",
+  "description": "BrunnoClear - Discord Self-Bot Completo",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build": "pkg . --output dist/brunnoclear.exe",
+    "build:win": "pkg . --output dist/brunnoclear-win.exe",
+    "build:linux": "pkg . --targets node22-linux-x64 --output dist/brunnoclear-linux",
+    "build:mac": "pkg . --targets node22-macos-x64 --output dist/brunnoclear-macos",
+    "release": "release.bat",
+    "format": "biome format --write ."
+  },
+  "bin": "index.js",
+  "pkg": {
+    "assets": [
+      "node_modules/discord.js-selfbot-v13/**",
+      "node_modules/@stablelib/xchacha20poly1305/**",
+      "node_modules/discord-rpc/**",
+      "node_modules/yauzl/**",
+      "src/services/rpc-server-standalone.js",
+      "src/ui/rpc-config.html"
+    ],
+    "targets": [
+      "node22-win-x64"
+    ],
+    "outputPath": "dist",
+    "scripts": [
+      "node-sqlite-shim.js",
+      "src/services/rpc-server-standalone.js"
+    ],
+    "ignore": [
+      "node:sqlite"
+    ]
+  },
+  "keywords": [
+    "discord",
+    "selfbot",
+    "discord-bot",
+    "discord-selfbot",
+    "message-cleaner",
+    "discord-tools"
+  ],
+  "author": "BrunnoClear",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brunnoxw/brunnoclear.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brunnoxw/brunnoclear/issues"
+  },
+  "homepage": "https://github.com/brunnoxw/brunnoclear#readme",
+  "dependencies": {
+    "@stablelib/xchacha20poly1305": "^2.0.1",
+    "debug": "^4.4.3",
+    "discord-rpc": "^4.0.1",
+    "discord.js-selfbot-v13": "https://github.com/brunnoxw/discord.js-selfbot-v13/archive/refs/heads/main.tar.gz",
+    "readline-sync": "^1.4.10",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "@yao-pkg/pkg": "^5.15.0",
+    "patch-package": "^8.0.1"
+  }
 }

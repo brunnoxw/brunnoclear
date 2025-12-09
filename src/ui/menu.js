@@ -2,6 +2,7 @@ const readlineSync = require('readline-sync');
 const { Cores, Simbolos, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
 const { exibirTitulo } = require('./titulo');
+const { backgroundTaskManager } = require('../utils/backgroundTasks');
 
 /**
  * Formata o menu em colunas
@@ -73,7 +74,28 @@ async function exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel 
 	process.title = 'BrunnoClear | Menu Principal';
 	exibirTitulo(cliente?.user?.username || 'Desconhecido', cliente?.user?.id || '0', corPrincipal);
 
-	exibirCabecalho('          MENU PRINCIPAL', corPrincipal);
+	console.log(''); // Linha vazia para espaçamento
+
+	// Exibir tarefas em segundo plano
+	const tarefasAtivas = backgroundTaskManager.getTasks();
+	if (tarefasAtivas.length > 0) {
+		const corCiano = Cores.ciano;
+		const corAmarelo = Cores.amarelo;
+		const reset = Cores.reset;
+		const separador = '─'.repeat(55);
+		const separadorColorido = corPrincipal === 'rainbow' ? textoRainbow(separador) : `${corPrincipal}${separador}${reset}`;
+
+		console.log(`        ${separadorColorido}`);
+		console.log(`        ${corAmarelo}⚡ TAREFAS EM SEGUNDO PLANO ATIVAS:${reset}`);
+		tarefasAtivas.forEach((task, index) => {
+			console.log(`        ${corCiano}  [${task.id}]${reset} ${task.name}`);
+		});
+		
+		const textoBg = "'bg'";
+		const textoBgColorido = corPrincipal === 'rainbow' ? textoRainbow(textoBg) : `${corPrincipal}${textoBg}${reset}`;
+		console.log(`        ${Simbolos.dica} Digite ${textoBgColorido} para gerenciar tarefas`);
+		console.log(`        ${separadorColorido}\n`);
+	}
 
 	if (atualizacaoDisponivel && atualizacaoDisponivel.disponivel) {
 		const corVerde = Cores.verde;

@@ -6,7 +6,7 @@ const { version } = require('../../package.json');
 let clienteRPC = null;
 let rpcAtivo = false;
 let iconeAplicacaoCache = null;
-let ultimoIdAplicacao = null; // Rastreia o último ID da aplicação
+let ultimoIdAplicacao = null;
 
 /**
  * Busca o ícone da aplicação Discord
@@ -106,9 +106,9 @@ async function obterTemaRPC() {
 	}
 
 	return {
-		nome: config.rpc.nome || 'BrunnoClear',
+		nome: config.rpc.nome,
 		estado: config.rpc.estado || `v${version}`,
-		detalhe: config.rpc.detalhe || 'No menu principal',
+		detalhe: config.rpc.detalhe,
 		imagemGrande: imagemGrande || 'https://i.imgur.com/uTql7fj.jpeg',
 		textoBotao: config.rpc.texto_botao,
 		urlBotao: config.rpc.url_botao
@@ -128,8 +128,10 @@ async function atualizarPresenca(presenca = {}) {
 	if (config.desativar_rpc) {
 		return;
 	}
+	
 	try {
 		const tema = await obterTemaRPC();
+		
 		const atividade = {
 			state: presenca.estado || tema.estado || `v${version}`,
 			details: presenca.detalhe || tema.detalhe,
@@ -139,9 +141,10 @@ async function atualizarPresenca(presenca = {}) {
 			smallImageText: presenca.textoImagemPequena,
 			...(tema.textoBotao && tema.urlBotao ? { buttons: [{ label: tema.textoBotao, url: tema.urlBotao }] } : {})
 		};
-
+		
 		await clienteRPC.setActivity(atividade);
-	} catch (erro) {}
+	} catch (erro) {
+	}
 }
 
 /**

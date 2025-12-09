@@ -111,6 +111,9 @@ function exibirBarraProgresso(atual, total, cor, corPrincipal) {
 }
 
 async function scraperIcons(cliente, corPrincipal) {
+	const cor = Cores[corPrincipal] || '';
+	const reset = Cores.reset;
+	
 	UIComponents.limparTela();
 	UIComponents.definirTituloJanela('BrunnoClear | Scraper de Icons');
 

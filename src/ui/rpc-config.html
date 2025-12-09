@@ -285,13 +285,13 @@
                                 <label class="text-sm font-medium text-zinc-200">Detalhe</label>
                                 <input type="text" id="detalhe" 
                                        class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                       placeholder="O melhor CL!">
+                                       placeholder="">
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-medium text-zinc-200">Estado</label>
                                 <input type="text" id="estado" 
                                        class="w-full px-4 py-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                       placeholder="No menu principal">
+                                       placeholder="">
                             </div>
                         </div>
 
@@ -395,9 +395,9 @@
                                 
                                 <!-- Informações -->
                                 <div class="flex-1 min-w-0">
-                                    <p id="preview-nome" class="text-sm font-semibold text-white mb-0.5">brunno clear</p>
-                                    <p id="preview-detalhe" class="text-xs text-zinc-300 mb-0.5">O melhor CL!</p>
-                                    <p id="preview-estado" class="text-xs text-zinc-300">No menu principal</p>
+                                    <p id="preview-nome" class="text-sm font-semibold text-white mb-0.5">Aguardando configuração...</p>
+                                    <p id="preview-detalhe" class="text-xs text-zinc-300 mb-0.5"></p>
+                                    <p id="preview-estado" class="text-xs text-zinc-300"></p>
                                     <p id="preview-tempo" class="text-xs text-zinc-400 mt-1">00:42 decorrido</p>
                                 </div>
                             </div>
@@ -461,7 +461,7 @@
             if (!appId || appId.length < 17) {
                 document.getElementById('nome_aplicacao').value = '';
                 document.getElementById('nome_aplicacao').placeholder = 'Aguardando ID da aplicação...';
-                nomeAppAtual = 'brunno clear';
+                nomeAppAtual = '';
                 iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
                 atualizarPreview();
                 return;
@@ -511,7 +511,7 @@
                 } else {
                     document.getElementById('nome_aplicacao').value = '';
                     document.getElementById('nome_aplicacao').placeholder = 'Aplicação não encontrada';
-                    nomeAppAtual = 'brunno clear';
+                    nomeAppAtual = '';
                     iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
                     atualizarPreview();
                     mostrarMensagem('❌ Aplicação não encontrada', 'error');
@@ -519,7 +519,7 @@
             } catch (erro) {
                 document.getElementById('nome_aplicacao').value = '';
                 document.getElementById('nome_aplicacao').placeholder = 'Erro ao buscar aplicação';
-                nomeAppAtual = 'brunno clear';
+                nomeAppAtual = '';
                 iconeAplicacao = 'https://i.imgur.com/uTql7fj.jpeg';
                 atualizarPreview();
                 mostrarMensagem('❌ Erro ao buscar aplicação: ' + erro.message, 'error');
@@ -537,9 +537,9 @@
             }
         });        
         function atualizarPreview() {
-            const nome = nomeAppAtual || 'brunno clear';
-            const detalhe = document.getElementById('detalhe').value || 'O melhor CL!';
-            const estado = document.getElementById('estado').value || 'No menu principal';
+            const nome = nomeAppAtual || 'Aguardando configuração...';
+            const detalhe = document.getElementById('detalhe').value || '';
+            const estado = document.getElementById('estado').value || '';
             let urlImagem = document.getElementById('url_imagem').value.trim();
 
             let imagemParaUsar = urlImagem || iconeAplicacao;
@@ -811,7 +811,9 @@
                 const desativado = config.desativar_rpc || false;
                 atualizarStatusToggle(!desativado);
                 
-                setTimeout(() => atualizarPreview(), 100);
+                setTimeout(() => {
+                    atualizarPreview();
+                }, 200);
                 
             } catch (erro) {
                 mostrarMensagem('❌ Erro ao carregar configurações: ' + erro.message, 'error');
@@ -856,7 +858,7 @@
             
             const config = {
                 id_aplicacao: idAplicacao,
-                nome: nomeAppAtual || 'brunno clear',
+                nome: nomeAppAtual || '',
                 estado: document.getElementById('estado').value || '',
                 detalhe: document.getElementById('detalhe').value || '',
                 url_imagem: urlImagem || '',
@@ -881,7 +883,7 @@
                 const resultado = await response.json();
                 
                 if (resultado.sucesso) {
-                    mostrarMensagem('✅ Configurações salvas com sucesso!', 'success');
+                    mostrarMensagem('✅ Configurações salvas e aplicadas com sucesso!', 'success');
                 } else {
                     mostrarMensagem('❌ Erro ao salvar: ' + (resultado.mensagem || 'Erro desconhecido'), 'error');
                 }

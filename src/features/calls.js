@@ -6,6 +6,7 @@ const { solicitarTexto, exibirErro } = require('../ui/menu');
 const { atualizarPresenca } = require('../services/rpc');
 const UIComponents = require('../utils/components');
 const CONSTANTS = require('../config/constants');
+const { backgroundTaskManager } = require('../utils/backgroundTasks');
 
 /**
  * Menu principal de utilidades de call
@@ -449,6 +450,17 @@ async function utilidadesCall(client, corPrincipal) {
 			return await voltarMenu();
 		}
 
+		UIComponents.limparTela();
+		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+		UIComponents.exibirCabecalho('          MODO DE EXECUÇÃO', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		UIComponents.exibirOpcaoMenu('1', 'Executar em primeiro plano (bloqueante)', corPrincipal);
+		UIComponents.exibirOpcaoMenu('2', 'Executar em segundo plano (retorna ao menu)', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+
+		const modoExecucao = readlineSync.question(UIComponents.obterPrompt());
+		const emSegundoPlano = modoExecucao === '2';
+
 		let canalSelecionado;
 
 		if (escolha === '1') {
@@ -543,6 +555,21 @@ async function utilidadesCall(client, corPrincipal) {
 		}
 
 		let deveContinuar = true;
+		let atualizarTempo;
+		let voiceUpdateListener;
+
+		const pararFarmagem = async () => {
+			deveContinuar = false;
+			if (atualizarTempo) clearInterval(atualizarTempo);
+			if (voiceUpdateListener) client.off('voiceStateUpdate', voiceUpdateListener);
+			if (connection) {
+				await connection.disconnect();
+			}
+			atualizarPresenca({
+				detalhe: 'No menu principal'
+			});
+		};
+
 		const exibirTelaTempo = () => {
 			if (!deveContinuar) return;
 			const tempo = Date.now() - iniciou;
@@ -550,38 +577,43 @@ async function utilidadesCall(client, corPrincipal) {
 			const minutos = Math.floor((tempo / 1000 / 60) % 60);
 			const horas = Math.floor(tempo / 1000 / 60 / 60);
 
+			const nomeCanal = canalSelecionado?.name || 'Canal Desconhecido';
+			const nomeGuild = canalSelecionado?.guild?.name || 'Servidor Desconhecido';
+			const iconGuild = canalSelecionado?.guild?.iconURL({ dynamic: true, size: 256 }) || 
+				'https://i.pinimg.com/736x/5c/d1/72/5cd172ee967ee3c703c3de27f1f240db.jpg';
+
 			atualizarPresenca({
 				estado: `${horas}h ${minutos}m ${segundos}s`,
-				detalhe: `Farmando em: ${canalSelecionado.name}`,
-				imagemPequena:
-					canalSelecionado.guild.iconURL({ dynamic: true, size: 256 }) ||
-					'https://i.pinimg.com/736x/5c/d1/72/5cd172ee967ee3c703c3de27f1f240db.jpg',
-				textoImagemPequena: `${canalSelecionado.guild.name}`
+				detalhe: `Farmando em: ${nomeCanal}`,
+				imagemPequena: iconGuild,
+				textoImagemPequena: nomeGuild
 			});
 
-			UIComponents.limparTela();
-			exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+			if (!emSegundoPlano) {
+				UIComponents.limparTela();
+				exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
 
-			UIComponents.exibirCabecalho('          FARMANDO HORAS', corPrincipal);
-			UIComponents.exibirLinhaVazia();
+				UIComponents.exibirCabecalho('          FARMANDO HORAS', corPrincipal);
+				UIComponents.exibirLinhaVazia();
 
-			console.log(
-				`        ${Simbolos.sucesso} Tempo: ${UIComponents.textoColorido(`${horas}h ${minutos}m ${segundos}s`, corPrincipal, false)}`
-			);
-			console.log(
-				`        ${Simbolos.info} Call: ${UIComponents.textoColorido(canalSelecionado.name, corPrincipal, false)}`
-			);
-			UIComponents.exibirLinhaVazia();
-			console.log(
-				`        Pressione ${UIComponents.textoColorido('QUALQUER TECLA', corPrincipal, false)} para parar e voltar ao menu.`
-			);
-			UIComponents.exibirLinhaVazia();
+				console.log(
+					`        ${Simbolos.sucesso} Tempo: ${UIComponents.textoColorido(`${horas}h ${minutos}m ${segundos}s`, corPrincipal, false)}`
+				);
+				console.log(
+					`        ${Simbolos.info} Call: ${UIComponents.textoColorido(nomeCanal, corPrincipal, false)}`
+				);
+				UIComponents.exibirLinhaVazia();
+				console.log(
+					`        Pressione ${UIComponents.textoColorido('QUALQUER TECLA', corPrincipal, false)} para parar e voltar ao menu.`
+				);
+				UIComponents.exibirLinhaVazia();
+			}
 		};
 
 		exibirTelaTempo();
 
-		const atualizarTempo = setInterval(exibirTelaTempo, 1000);
-		const voiceUpdateListener = async (oldState, newState) => {
+		atualizarTempo = setInterval(exibirTelaTempo, 1000);
+		voiceUpdateListener = async (oldState, newState) => {
 			if (oldState.member.id === client.user.id && oldState.channelId && !newState.channelId) {
 				await sleep(2);
 
@@ -598,36 +630,56 @@ async function utilidadesCall(client, corPrincipal) {
 
 		client.on('voiceStateUpdate', voiceUpdateListener);
 
-		await new Promise((resolve) => {
-			const checkInterval = setInterval(() => {}, 100);
+		if (emSegundoPlano) {
+			const nomeCanal = canalSelecionado?.name || 'Canal Desconhecido';
+			const nomeGuild = canalSelecionado?.guild?.name || 'Servidor Desconhecido';
+			
+			const taskId = backgroundTaskManager.addTask(
+				`Farmar em: ${nomeCanal}`,
+				pararFarmagem,
+				{
+					canal: nomeCanal,
+					guild: nomeGuild,
+					iniciou
+				}
+			);
 
-			const stdin = process.stdin;
-			stdin.setRawMode(true);
-			stdin.resume();
-			stdin.setEncoding('utf8');
-			const onData = () => {
-				deveContinuar = false;
-				clearInterval(atualizarTempo);
-				clearInterval(checkInterval);
-				stdin.setRawMode(false);
-				stdin.pause();
-				stdin.removeListener('data', onData);
-				resolve();
-			};
+			UIComponents.limparTela();
+			exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+			UIComponents.exibirCabecalho('          FARMAGEM EM SEGUNDO PLANO', corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			UIComponents.exibirSucesso(`Farmagem iniciada em segundo plano!`, corPrincipal);
+			UIComponents.exibirInfo(`Canal: ${nomeCanal}`, corPrincipal);
+			UIComponents.exibirInfo(`Você pode gerenciar esta tarefa no menu principal`, corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			await sleep(CONSTANTS.DELAYS.SHORT_PAUSE);
 
-			stdin.on('data', onData);
-		});
-		client.off('voiceStateUpdate', voiceUpdateListener);
+			return await voltarMenu();
+		} else {
+			await new Promise((resolve) => {
+				const checkInterval = setInterval(() => {}, 100);
 
-		if (connection) {
-			await connection.disconnect();
+				const stdin = process.stdin;
+				stdin.setRawMode(true);
+				stdin.resume();
+				stdin.setEncoding('utf8');
+				const onData = () => {
+					deveContinuar = false;
+					clearInterval(atualizarTempo);
+					clearInterval(checkInterval);
+					stdin.setRawMode(false);
+					stdin.pause();
+					stdin.removeListener('data', onData);
+					resolve();
+				};
+
+				stdin.on('data', onData);
+			});
+			
+			await pararFarmagem();
+
+			return await voltarMenu();
 		}
-
-		atualizarPresenca({
-			detalhe: 'No menu principal'
-		});
-
-		await voltarMenu();
 	};
 	const elevador = async () => {
 		UIComponents.limparTela();
@@ -1032,10 +1084,85 @@ async function utilidadesCall(client, corPrincipal) {
 			return voltarMenu();
 		}
 
+		UIComponents.limparTela();
+		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+		UIComponents.exibirCabecalho('          MODO DE EXECUÇÃO', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		UIComponents.exibirOpcaoMenu('1', 'Executar em primeiro plano (bloqueante)', corPrincipal);
+		UIComponents.exibirOpcaoMenu('2', 'Executar em segundo plano (retorna ao menu)', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+
+		const modoExecucao = readlineSync.question(UIComponents.obterPrompt());
+		const emSegundoPlano = modoExecucao === '2';
+
 		let deveContinuar = true;
 		const protecoesPorUsuario = {};
 		membros.forEach((m) => (protecoesPorUsuario[m.id] = 0));
 		let ultimaAcao = 'Aguardando atividade...';
+
+		const pararProtecao = async () => {
+			deveContinuar = false;
+			if (voiceUpdateListener) {
+				client.off('voiceStateUpdate', voiceUpdateListener);
+			}
+			atualizarPresenca({
+				detalhe: 'No menu principal'
+			});
+		};
+
+		const exibirTelaProtecao = () => {
+			if (!deveContinuar) return;
+
+			const totalProtecoes = Object.values(protecoesPorUsuario).reduce((a, b) => a + b, 0);
+			const nomeGuild = guild?.name || 'Servidor Desconhecido';
+			const iconGuild = guild?.iconURL({ dynamic: true, size: 256 }) || 
+				'https://i.pinimg.com/736x/5c/d1/72/5cd172ee967ee3c703c3de27f1f240db.jpg';
+
+			atualizarPresenca({
+				estado: `Protegendo ${membros.length} usuário(s)`,
+				detalhe: `Proteções: ${totalProtecoes}`,
+				imagemPequena: iconGuild,
+				textoImagemPequena: nomeGuild
+			});
+
+			if (!emSegundoPlano) {
+				UIComponents.limparTela();
+				exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+
+				UIComponents.exibirCabecalho('          PROTEÇÃO ATIVA', corPrincipal);
+				UIComponents.exibirLinhaVazia();
+
+				console.log(`        ${Simbolos.info} Servidor: ${UIComponents.textoColorido(nomeGuild, corPrincipal, false)}`);
+				console.log(
+					`        ${Simbolos.info} Total de proteções: ${UIComponents.textoColorido(totalProtecoes.toString(), corPrincipal, false)}`
+				);
+				UIComponents.exibirLinhaVazia();
+
+				console.log(`        ${Simbolos.sucesso} Usuários protegidos:`);
+				membros.forEach((membro) => {
+					const protecoes = protecoesPorUsuario[membro.id] || 0;
+					const userTag = membro?.user?.tag || 'Usuário Desconhecido';
+					console.log(
+						`           ${UIComponents.textoColorido(userTag, corPrincipal, false)} - ${UIComponents.textoColorido(protecoes.toString(), corPrincipal, false)} proteções`
+					);
+				});
+
+				UIComponents.exibirLinhaVazia();
+				console.log(
+					`        ${Simbolos.info} Última ação: ${UIComponents.textoColorido(ultimaAcao, corPrincipal, false)}`
+				);
+				UIComponents.exibirLinhaVazia();
+				console.log(
+					`        ${UIComponents.textoColorido('🛡️', corPrincipal, false)} Anti-MUTE: ${UIComponents.textoColorido('ATIVO', corPrincipal, false)}`
+				);
+				console.log(
+					`        ${UIComponents.textoColorido('🛡️', corPrincipal, false)} Anti-DEAF: ${UIComponents.textoColorido('ATIVO', corPrincipal, false)}`
+				);
+				UIComponents.exibirLinhaVazia();
+				console.log(`        Pressione ${UIComponents.textoColorido('ENTER', corPrincipal, false)} para parar.`);
+				UIComponents.exibirLinhaVazia();
+			}
+		};
 
 		const voiceUpdateListener = async (oldState, newState) => {
 			if (!deveContinuar) return;
@@ -1081,55 +1208,33 @@ async function utilidadesCall(client, corPrincipal) {
 
 		client.on('voiceStateUpdate', voiceUpdateListener);
 
-		const exibirTelaProtecao = () => {
-			if (!deveContinuar) return;
-
-			const totalProtecoes = Object.values(protecoesPorUsuario).reduce((a, b) => a + b, 0);
-
-			atualizarPresenca({
-				estado: `Protegendo ${membros.length} usuário(s)`,
-				detalhe: `Proteções: ${totalProtecoes}`,
-				imagemPequena:
-					guild.iconURL({ dynamic: true, size: 256 }) ||
-					'https://i.pinimg.com/736x/5c/d1/72/5cd172ee967ee3c703c3de27f1f240db.jpg',
-				textoImagemPequena: `${guild.name}`
-			});
+		if (emSegundoPlano) {
+			const usuariosNomes = membros.map(m => m?.user?.username || 'Usuário').join(', ');
+			const nomeGuild = guild?.name || 'Servidor Desconhecido';
+			
+			const taskId = backgroundTaskManager.addTask(
+				`Proteger: ${usuariosNomes}`,
+				pararProtecao,
+				{
+					guild: nomeGuild,
+					usuarios: membros.map(m => ({ id: m.id, username: m?.user?.username || 'Usuário' })),
+					protecoes: protecoesPorUsuario
+				}
+			);
 
 			UIComponents.limparTela();
 			exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
+			UIComponents.exibirCabecalho('          PROTEÇÃO EM SEGUNDO PLANO', corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			UIComponents.exibirSucesso(`Proteção iniciada em segundo plano!`, corPrincipal);
+			UIComponents.exibirInfo(`Servidor: ${nomeGuild}`, corPrincipal);
+			UIComponents.exibirInfo(`Usuários protegidos: ${membros.length}`, corPrincipal);
+			UIComponents.exibirInfo(`Você pode gerenciar esta tarefa no menu principal`, corPrincipal);
+			UIComponents.exibirLinhaVazia();
+			await sleep(CONSTANTS.DELAYS.SHORT_PAUSE);
 
-			UIComponents.exibirCabecalho('          PROTEÇÃO ATIVA', corPrincipal);
-			UIComponents.exibirLinhaVazia();
-
-			console.log(`        ${Simbolos.info} Servidor: ${UIComponents.textoColorido(guild.name, corPrincipal, false)}`);
-			console.log(
-				`        ${Simbolos.info} Total de proteções: ${UIComponents.textoColorido(totalProtecoes.toString(), corPrincipal, false)}`
-			);
-			UIComponents.exibirLinhaVazia();
-
-			console.log(`        ${Simbolos.sucesso} Usuários protegidos:`);
-			membros.forEach((membro) => {
-				const protecoes = protecoesPorUsuario[membro.id] || 0;
-				console.log(
-					`           ${UIComponents.textoColorido(membro.user.tag, corPrincipal, false)} - ${UIComponents.textoColorido(protecoes.toString(), corPrincipal, false)} proteções`
-				);
-			});
-
-			UIComponents.exibirLinhaVazia();
-			console.log(
-				`        ${Simbolos.info} Última ação: ${UIComponents.textoColorido(ultimaAcao, corPrincipal, false)}`
-			);
-			UIComponents.exibirLinhaVazia();
-			console.log(
-				`        ${UIComponents.textoColorido('🛡️', corPrincipal, false)} Anti-MUTE: ${UIComponents.textoColorido('ATIVO', corPrincipal, false)}`
-			);
-			console.log(
-				`        ${UIComponents.textoColorido('🛡️', corPrincipal, false)} Anti-DEAF: ${UIComponents.textoColorido('ATIVO', corPrincipal, false)}`
-			);
-			UIComponents.exibirLinhaVazia();
-			console.log(`        Pressione ${UIComponents.textoColorido('ENTER', corPrincipal, false)} para parar.`);
-			UIComponents.exibirLinhaVazia();
-		};
+			return await voltarMenu();
+		}
 
 		exibirTelaProtecao();
 
@@ -1141,8 +1246,6 @@ async function utilidadesCall(client, corPrincipal) {
 
 			const onData = (key) => {
 				if (key === '\r' || key === '\n' || key.charCodeAt(0) === 13) {
-					deveContinuar = false;
-					client.off('voiceStateUpdate', voiceUpdateListener);
 					stdin.setRawMode(false);
 					stdin.pause();
 					stdin.removeListener('data', onData);
@@ -1153,10 +1256,7 @@ async function utilidadesCall(client, corPrincipal) {
 			stdin.on('data', onData);
 		});
 
-		atualizarPresenca({
-			detalhe: 'No menu principal'
-		});
-
+		await pararProtecao();
 		await voltarMenu();
 	};
 	const acoesMenu = [
