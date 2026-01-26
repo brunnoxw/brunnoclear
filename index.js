@@ -2,7 +2,7 @@
 
 const { Client } = require('discord.js-selfbot-v13');
 const readlineSync = require('readline-sync');
-const { obterConfig, criarConfig, adicionarToken } = require('./src/config/configuracao');
+const { obterConfig, criarConfig, adicionarToken, sincronizarVersaoRPC } = require('./src/config/configuracao');
 const { Cores, Simbolos, textoRainbow } = require('./src/utils/cores');
 const { sleep } = require('./src/utils/sleep');
 const { inicializarRPC, atualizarPresenca } = require('./src/services/rpc');
@@ -143,6 +143,7 @@ async function inicializar() {
 	UIComponents.definirTituloJanela('BrunnoClear | Inicializando...');
 
 	criarConfig();
+	sincronizarVersaoRPC();
 	const config = obterConfig();
 
 	corPrincipal = Cores.principal(config.cor_painel);

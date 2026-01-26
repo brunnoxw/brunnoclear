@@ -186,6 +186,44 @@ function atualizarPropriedade(chave, valor) {
 	return atualizarConfig(chave, valor);
 }
 
+/**
+ * Sincroniza a versão do RPC com a versão do package.json
+ * Atualiza automaticamente o config.json se a versão estiver diferente
+ * @returns {Object} Resultado da operação
+ */
+function sincronizarVersaoRPC() {
+	try {
+		const config = obterConfig();
+		const versaoAtual = obterVersao();
+		const versaoEsperada = `v${versaoAtual}`;
+		
+		if (config.rpc && config.rpc.estado) {
+			const regexVersao = /v?\d+\.\d+\.\d+/i;
+			const matchEstado = config.rpc.estado.match(regexVersao);
+			
+			if (matchEstado) {
+				const versaoNoEstado = matchEstado[0].toLowerCase().replace(/^v/, '');
+				
+				if (versaoNoEstado !== versaoAtual) {
+					config.rpc.estado = versaoEsperada;
+					salvarConfig(config);
+					return { 
+						sucesso: true, 
+						atualizado: true, 
+						versaoAnterior: matchEstado[0], 
+						versaoNova: versaoEsperada 
+					};
+				}
+			}
+		}
+		
+		return { sucesso: true, atualizado: false };
+	} catch (erro) {
+		console.error('Erro ao sincronizar versão do RPC:', erro);
+		return { sucesso: false, mensagem: erro.message };
+	}
+}
+
 module.exports = {
 	criarConfig,
 	obterConfig,
@@ -193,5 +231,6 @@ module.exports = {
 	adicionarToken,
 	removerToken,
 	atualizarConfig,
-	atualizarPropriedade
+	atualizarPropriedade,
+	sincronizarVersaoRPC
 };
