@@ -1,4 +1,3 @@
-const readlineSync = require('readline-sync');
 const { Cores, Simbolos, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
 const { exibirTitulo } = require('../ui/titulo');
@@ -127,7 +126,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('3', 'Todos os tipos', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const opcaoTipo = readlineSync.question(UIComponents.obterPrompt());
+	const opcaoTipo = await solicitarTexto(UIComponents.obterPrompt());
 	let tipoArquivo;
 	switch (opcaoTipo) {
 		case '1':
@@ -156,7 +155,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	UIComponents.exibirInfo('Digite o ID do canal de origem:', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const idCanalOrigem = readlineSync.question(UIComponents.obterPrompt());
+	const idCanalOrigem = await solicitarTexto(UIComponents.obterPrompt());
 	const canalOrigem = cliente.channels.cache.get(idCanalOrigem);
 
 	if (!canalOrigem) {
@@ -191,7 +190,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('2', 'Via Conta (canal do Discord)', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const opcaoMetodo = readlineSync.question(UIComponents.obterPrompt());
+	const opcaoMetodo = await solicitarTexto(UIComponents.obterPrompt());
 	let metodoEnvio, webhookUrl, canalDestino;
 	if (opcaoMetodo === '1') {
 		metodoEnvio = 'webhook';
@@ -204,7 +203,7 @@ async function scraperIcons(cliente, corPrincipal) {
 		UIComponents.exibirInfo('Cole a URL do webhook:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		webhookUrl = readlineSync.question(UIComponents.obterPrompt());
+		webhookUrl = await solicitarTexto(UIComponents.obterPrompt());
 
 		if (!isValidUrl(webhookUrl) || !webhookUrl.includes('discord.com/api/webhooks/')) {
 			UIComponents.limparTela();
@@ -225,7 +224,7 @@ async function scraperIcons(cliente, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite o ID do canal de destino:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idCanalDestino = readlineSync.question(UIComponents.obterPrompt());
+		const idCanalDestino = await solicitarTexto(UIComponents.obterPrompt());
 		canalDestino = cliente.channels.cache.get(idCanalDestino);
 
 		if (!canalDestino) {
@@ -265,7 +264,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	UIComponents.exibirLinhaVazia();
 	UIComponents.exibirInfo('Quantas imagens por mensagem? (1-10)', corPrincipal);
 	UIComponents.exibirLinhaVazia();
-	const qtdPorMensagem = parseInt(readlineSync.question(UIComponents.obterPrompt()));
+	const qtdPorMensagem = parseInt(await solicitarTexto(UIComponents.obterPrompt()));
 
 	if (isNaN(qtdPorMensagem) || qtdPorMensagem < 1 || qtdPorMensagem > 10) {
 		UIComponents.limparTela();
@@ -286,7 +285,7 @@ async function scraperIcons(cliente, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('1', 'Coletar tudo primeiro, depois enviar', corPrincipal);
 	UIComponents.exibirOpcaoMenu('2', 'Coletar em blocos de 100 e enviar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
-	const opcaoEstrategia = readlineSync.question(UIComponents.obterPrompt());
+	const opcaoEstrategia = await solicitarTexto(UIComponents.obterPrompt());
 
 	if (opcaoEstrategia !== '1' && opcaoEstrategia !== '2') {
 		UIComponents.limparTela();

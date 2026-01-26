@@ -26,7 +26,7 @@ async function exibirUserInfo(cliente, corPrincipal) {
 	UIComponents.exibirInfo('Digite o ID do usuário para ver suas informações', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const idUsuario = solicitarTexto('ID do usuário:');
+	const idUsuario = await solicitarTexto('ID do usuário:');
 
 	if (!idUsuario) {
 		UIComponents.exibirErroMensagem('ID do usuário não pode estar vazio!', corPrincipal);

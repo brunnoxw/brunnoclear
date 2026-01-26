@@ -1,4 +1,4 @@
-const readlineSync = require('readline-sync');
+const { readlineAsync } = require('../utils/readline-async');
 const { Cores, Simbolos, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
 const { exibirTitulo } = require('./titulo');
@@ -74,9 +74,8 @@ async function exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel 
 	process.title = 'BrunnoClear | Menu Principal';
 	exibirTitulo(cliente?.user?.username || 'Desconhecido', cliente?.user?.id || '0', corPrincipal);
 
-	console.log(''); // Linha vazia para espaçamento
+	console.log('');
 
-	// Exibir tarefas em segundo plano
 	const tarefasAtivas = backgroundTaskManager.getTasks();
 	if (tarefasAtivas.length > 0) {
 		const corCiano = Cores.ciano;
@@ -88,7 +87,7 @@ async function exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel 
 		console.log(`        ${separadorColorido}`);
 		console.log(`        ${corAmarelo}⚡ TAREFAS EM SEGUNDO PLANO ATIVAS:${reset}`);
 		tarefasAtivas.forEach((task, index) => {
-			console.log(`        ${corCiano}  [${task.id}]${reset} ${task.name}`);
+			console.log(`        ${corCiano}  [${index + 1}]${reset} ${task.name}`);
 		});
 		
 		const textoBg = "'bg'";
@@ -137,13 +136,14 @@ async function exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel 
 		{ id: '14', descricao: 'Definir Rich Presence' },
 		{ id: '15', descricao: 'Customizar' },
 		{ id: '16', descricao: '😈 Zaralho Mode 😈' },
+		{ id: 'help', descricao: 'Comandos Discord' },
 		{ id: '99', descricao: 'Sair' }
 	];
 
 	console.log(formatarMenuEmColunas(opcoes, 2, corPrincipal));
 	exibirSeparador(corPrincipal);
 
-	return readlineSync.question('        > ');
+	return await readlineAsync.question('        > ');
 }
 
 /**
@@ -180,28 +180,28 @@ async function exibirMenuConfig(cliente, config, corPrincipal) {
 	console.log('');
 	exibirSeparador(corPrincipal);
 
-	return readlineSync.question('        > ');
+	return await readlineAsync.question('        > ');
 }
 
 /**
  * Menu de confirmação simples
  * @param {string} mensagem - Mensagem a exibir
- * @returns {boolean} - true se confirmado
+ * @returns {Promise<boolean>} - true se confirmado
  */
-function confirmar(mensagem) {
+async function confirmar(mensagem) {
 	console.log(mensagem + ' [s/sim]');
-	const resposta = readlineSync.question('> ').toLowerCase();
+	const resposta = (await readlineAsync.question('> ')).toLowerCase();
 	return resposta === 's' || resposta === 'sim';
 }
 
 /**
  * Solicita entrada de texto
  * @param {string} mensagem - Mensagem a exibir
- * @returns {string} - Texto digitado
+ * @returns {Promise<string>} - Texto digitado
  */
-function solicitarTexto(mensagem) {
+async function solicitarTexto(mensagem) {
 	console.log(mensagem);
-	return readlineSync.question('> ').trim();
+	return (await readlineAsync.question('> ')).trim();
 }
 
 /**

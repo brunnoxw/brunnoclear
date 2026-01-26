@@ -24,7 +24,7 @@ async function limparDMUnica(cliente, corPrincipal) {
 	UIComponents.exibirInfo('Digite o ID do usuário ou canal:', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const idUsuario = solicitarTexto('');
+	const idUsuario = await solicitarTexto('');
 	let nomeUsuario;
 	let canal = cliente.channels.cache.get(idUsuario);
 	let contador = 0;
@@ -248,8 +248,7 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 		UIComponents.exibirAviso('Isso será aplicado a todas as DMs', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const readlineSync = require('readline-sync');
-		const opcaoAnexos = readlineSync.question(UIComponents.obterPrompt());
+		const opcaoAnexos = await solicitarTexto(UIComponents.obterPrompt());
 		baixarAnexos = opcaoAnexos === '1';
 	}
 

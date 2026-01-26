@@ -128,7 +128,7 @@ async function confirmarBackup(corPrincipal) {
 	console.log(`        ${Cores.verde}[1]${reset} Sim, fazer backup`);
 	console.log(`        ${Cores.vermelho}[2]${reset} Não, apenas apagar\n`);
 
-	const resposta = solicitarTexto('');
+	const resposta = await solicitarTexto('');
 	return resposta === '1';
 }
 
@@ -158,7 +158,7 @@ async function confirmarDownloadAnexos(corPrincipal, totalAnexos, tamanhoTotal) 
 	console.log(`        ${Cores.verde}[1]${reset} Sim, baixar anexos localmente (recomendado)`);
 	console.log(`        ${Cores.amarelo}[2]${reset} Não, usar apenas URLs (podem expirar)\n`);
 
-	const resposta = solicitarTexto('');
+	const resposta = await solicitarTexto('');
 	return resposta === '1';
 }
 

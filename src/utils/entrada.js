@@ -1,12 +1,12 @@
-const readlineSync = require('readline-sync');
 
 /**
  * Aguarda o usuário pressionar Enter
  * @returns {Promise<void>}
  */
-function aguardarEnter() {
-	readlineSync.keyInPause('', { guide: false });
-	return Promise.resolve();
+
+async function aguardarEnter() {
+    await require('./readline-async').readlineAsync.question('Pressione ENTER para continuar...');
+    return;
 }
 
 /**

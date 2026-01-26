@@ -3,7 +3,7 @@
 const { Client } = require('discord.js-selfbot-v13');
 const readlineSync = require('readline-sync');
 const { obterConfig, criarConfig, adicionarToken } = require('./src/config/configuracao');
-const { Cores, Simbolos } = require('./src/utils/cores');
+const { Cores, Simbolos, textoRainbow } = require('./src/utils/cores');
 const { sleep } = require('./src/utils/sleep');
 const { inicializarRPC, atualizarPresenca } = require('./src/services/rpc');
 const { validarToken, buscarTokensWindows } = require('./src/services/tokens');
@@ -23,24 +23,29 @@ const { criarBackupMensagens } = require('./src/features/backup');
 const { scraperIcons } = require('./src/features/scraper');
 const { clonarServidor } = require('./src/features/clonar');
 const { menuZaralho } = require('./src/features/zaralho');
+const { readlineAsync } = require('./src/utils/readline-async');
 const UIComponents = require('./src/utils/components');
 const CONSTANTS = require('./src/config/constants');
 const { version: VERSAO_ATUAL } = require('./package.json');
 const { backgroundTaskManager } = require('./src/utils/backgroundTasks');
+const ComandosPrefix = require('./src/features/comandos-prefix');
 
 let cliente = null;
 let corPrincipal = null;
 let estaNoMenuPrincipal = false;
 let atualizacaoDisponivel = null;
+let deveLimparMenuProximaIteracao = false;
 
 /**
  * Atualiza o RPC para o estado do menu principal
  */
 function entrarMenuPrincipal() {
 	estaNoMenuPrincipal = true;
-	atualizarPresenca({
-		detalhe: 'No menu principal'
-	}).catch(() => {});
+	if (backgroundTaskManager.getTasks().length === 0) {
+		atualizarPresenca({
+			detalhe: 'No menu principal'
+		}).catch(() => {});
+	}
 }
 
 /**
@@ -48,6 +53,9 @@ function entrarMenuPrincipal() {
  */
 function sairMenuPrincipal() {
 	estaNoMenuPrincipal = false;
+	if (global.limparTimeoutsPendentes) {
+		global.limparTimeoutsPendentes();
+	}
 }
 
 /**
@@ -234,8 +242,8 @@ async function adicionarTokenManual() {
 	UIComponents.exibirLinhaVazia();
 
 	while (true) {
-		const token = solicitarTexto('Token:').replace(/"/g, '').trim();
-		const nome = solicitarTexto('Nome para representar a token:');
+		const token = (await solicitarTexto('Token:')).replace(/"/g, '').trim();
+		const nome = await solicitarTexto('Nome para representar a token:');
 
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Validando token...', corPrincipal);
@@ -539,6 +547,96 @@ async function conectarComToken(token) {
 
 	try {
 		await cliente.login(token);
+		
+		const comandosPrefix = new ComandosPrefix(cliente);
+		comandosPrefix.iniciar();
+		
+		let tarefasAdicionadasPendentes = 0;
+		let tarefasRemovidasPendentes = 0;
+		let timeoutAtualizacao = null;
+		let tempoInicioReadline = null;
+		let timeoutsCancelamento = []; 
+
+		global.registrarInicioReadline = () => {
+			tempoInicioReadline = Date.now();
+		};
+		
+		global.limparTimeoutsPendentes = () => {
+			if (timeoutAtualizacao) {
+				clearTimeout(timeoutAtualizacao);
+				timeoutAtualizacao = null;
+			}
+			if (timeoutsCancelamento.length > 0) {
+				timeoutsCancelamento.forEach(timeout => clearTimeout(timeout));
+				timeoutsCancelamento = [];
+			}
+		};
+		
+		const atualizarMenu = () => {
+			const totalMudancas = tarefasAdicionadasPendentes + tarefasRemovidasPendentes;
+			
+			if (totalMudancas > 0) {
+				tarefasAdicionadasPendentes = 0;
+				tarefasRemovidasPendentes = 0;
+				
+				if (!estaNoMenuPrincipal) {
+					return;
+				}
+				
+				deveLimparMenuProximaIteracao = true;
+				
+				if (totalMudancas === 1) {
+					console.log('\n');
+					console.log(`        ${Cores.verde}✓${Cores.reset} Nova tarefa em segundo plano iniciada!`);
+				} else if (totalMudancas > 1) {
+					console.log('\n');
+					console.log(`        ${Cores.verde}✓${Cores.reset} +${totalMudancas} tarefas em segundo plano atualizadas!`);
+				}
+				
+				if (estaNoMenuPrincipal && readlineAsync.isWaiting()) {
+					const timeout = setTimeout(() => {
+						const index = timeoutsCancelamento.indexOf(timeout);
+						if (index > -1) timeoutsCancelamento.splice(index, 1);
+						
+						if (estaNoMenuPrincipal && readlineAsync.isWaiting()) {
+							const tempoDecorrido = tempoInicioReadline ? Date.now() - tempoInicioReadline : 999999;
+							if (tempoDecorrido > 300) {
+								try {
+									readlineAsync.cancel();
+								} catch (e) {
+								}
+							} else {
+							}
+						} else {
+						}
+					}, 100);
+					
+					timeoutsCancelamento.push(timeout);
+				} else {
+				}
+			}
+		};
+		
+		backgroundTaskManager.on('taskAdded', () => {
+			tarefasAdicionadasPendentes++;
+			
+			if (timeoutAtualizacao) {
+				clearTimeout(timeoutAtualizacao);
+			}
+			
+			timeoutAtualizacao = setTimeout(atualizarMenu, 100);
+		});
+		
+		backgroundTaskManager.on('taskRemoved', () => {
+			tarefasRemovidasPendentes++;
+			
+			if (timeoutAtualizacao) {
+				clearTimeout(timeoutAtualizacao);
+			}
+			
+			timeoutAtualizacao = setTimeout(atualizarMenu, 100);
+		});
+		
 		UIComponents.limparTela();
 
 		exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
@@ -594,9 +692,67 @@ async function conectarComToken(token) {
 }
 
 /**
+ * Exibe a ajuda de comandos Discord com prefixo
+ */
+async function exibirAjudaComandosDiscord() {
+	UIComponents.limparTela();
+	UIComponents.definirTituloJanela('BrunnoClear | Comandos Discord');
+	
+	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+	
+	UIComponents.exibirCabecalho('          COMANDOS DISCORD (PREFIXO ;)', corPrincipal);
+	UIComponents.exibirLinhaVazia();
+	
+	const comandos = [
+		{ cmd: ';cl', desc: 'Iniciar Clear (deletar mensagens)' },
+		{ cmd: ';stop', desc: 'Parar Clear ativo' },
+		{ cmd: ';stopall', desc: 'Parar TODOS os comandos ativos' },
+		{ cmd: ';mic @user', desc: 'Mutar/desmutar microfone de usuário' },
+		{ cmd: ';mute @user', desc: 'Mutar/desmutar áudio de usuário' },
+		{ cmd: ';muteall', desc: 'Silenciar todos os membros da call' },
+		{ cmd: ';block @user', desc: 'Desconectar usuário da call' },
+		{ cmd: ';blockall', desc: 'Desconectar todos da call' },
+		{ cmd: ';silence', desc: 'Silenciar call inteira' },
+		{ cmd: ';coleira @user', desc: 'Prender usuário na call atual' },
+		{ cmd: ';proteger @user', desc: 'Proteger usuário (auto-unmute)' },
+		{ cmd: ';apelido @user NICK', desc: 'Forçar apelido no usuário' },
+		{ cmd: ';elevador @user', desc: 'Mover usuário entre calls' },
+		{ cmd: ';stalkear @user', desc: 'Seguir usuário entre calls' },
+		{ cmd: ';link', desc: 'Criar convite do servidor' },
+		{ cmd: ';farm ID_CALL', desc: 'Farmar horas em call' }
+	];
+	
+	comandos.forEach(({ cmd, desc }) => {
+		const cmdFormatado = `${cmd.padEnd(22)}`;
+		const cmdColorido = corPrincipal === 'rainbow' 
+			? textoRainbow(cmdFormatado) 
+			: `${corPrincipal}${cmdFormatado}${Cores.reset}`;
+		console.log(`        ${cmdColorido} ${desc}`);
+	});
+	
+	UIComponents.exibirLinhaVazia();
+	UIComponents.exibirSeparador(corPrincipal);
+	UIComponents.exibirInfo('Use estes comandos no Discord, não no menu!', corPrincipal);
+	UIComponents.exibirSeparador(corPrincipal);
+	UIComponents.exibirLinhaVazia();
+	
+	await readlineAsync.question('        Pressione ENTER para voltar...');
+}
+
+/**
  * Menu para gerenciar tarefas em segundo plano
  */
 async function menuGerenciarTarefas() {
+	
+	await sleep(0.1);
+	
+	try {
+		await readlineAsync.reset();
+	} catch (e) {
+	}
+	
+	await sleep(0.1);
+	
 	const tarefas = backgroundTaskManager.getTasks();
 	
 	if (tarefas.length === 0) {
@@ -620,7 +776,7 @@ async function menuGerenciarTarefas() {
 		const segundos = tempoDecorrido % 60;
 		const tempoFormatado = `${minutos}m ${segundos}s`;
 		
-		console.log(`        ${Simbolos.info} [${task.id}] ${task.name}`);
+		console.log(`        ${Simbolos.info} [${index + 1}] ${task.name}`);
 		console.log(`           Tempo ativo: ${tempoFormatado}`);
 		if (task.data) {
 			if (task.data.canal) console.log(`           Canal: ${task.data.canal}`);
@@ -637,21 +793,49 @@ async function menuGerenciarTarefas() {
 	UIComponents.exibirOpcaoMenu('0', 'Voltar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 	
-	const opcao = readlineSync.question(UIComponents.obterPrompt());
+	const opcao = await readlineAsync.question(UIComponents.obterPrompt());
 	
 	if (opcao === '1') {
-		UIComponents.exibirLinhaVazia();
-		console.log('        Digite o ID da tarefa para cancelar:');
-		const taskId = parseInt(readlineSync.question(UIComponents.obterPrompt()));
 		
-		const task = backgroundTaskManager.getTask(taskId);
+		UIComponents.limparTela();
+		exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
+		UIComponents.exibirCabecalho('          TAREFAS EM SEGUNDO PLANO', corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		
+		const tarefasAtuais = backgroundTaskManager.getTasks();
+		tarefasAtuais.forEach((task, index) => {
+			const tempoDecorrido = Math.floor((Date.now() - task.startedAt) / 1000);
+			const minutos = Math.floor(tempoDecorrido / 60);
+			const segundos = tempoDecorrido % 60;
+			const tempoFormatado = `${minutos}m ${segundos}s`;
+			
+			console.log(`        ${Simbolos.info} [${index + 1}] ${task.name}`);
+			console.log(`           Tempo ativo: ${tempoFormatado}`);
+			if (task.data) {
+				if (task.data.canal) console.log(`           Canal: ${task.data.canal}`);
+				if (task.data.guild) console.log(`           Servidor: ${task.data.guild}`);
+				if (task.data.usuarios) console.log(`           Usuários: ${task.data.usuarios.length}`);
+			}
+			UIComponents.exibirLinhaVazia();
+		});
+		
+		UIComponents.exibirSeparador(corPrincipal);
+		UIComponents.exibirLinhaVazia();
+		console.log('        Digite o número da tarefa para cancelar:');
+		UIComponents.exibirLinhaVazia();
+		
+		const indice = parseInt(await readlineAsync.question(UIComponents.obterPrompt()));
+		
+		const tarefasAtualizadas = backgroundTaskManager.getTasks();
+		const task = tarefasAtualizadas[indice - 1];
+		
 		if (task) {
-			await backgroundTaskManager.removeTask(taskId);
+			await backgroundTaskManager.removeTask(task.id);
 			UIComponents.limparTela();
 			UIComponents.exibirSucesso(`Tarefa "${task.name}" cancelada!`, corPrincipal);
 			await sleep(2);
 		} else {
-			await exibirErro('ID de tarefa inválido.');
+			await exibirErro('Número de tarefa inválido.');
 		}
 	} else if (opcao === '2') {
 		UIComponents.limparTela();
@@ -661,7 +845,7 @@ async function menuGerenciarTarefas() {
 		UIComponents.exibirOpcaoMenu('2', 'Não', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 		
-		const confirma = readlineSync.question(UIComponents.obterPrompt());
+		const confirma = await readlineAsync.question(UIComponents.obterPrompt());
 		if (confirma === '1') {
 			await backgroundTaskManager.removeAllTasks();
 			UIComponents.limparTela();
@@ -715,6 +899,7 @@ async function menuPrincipal() {
 		{ id: '14', action: () => configurarRichPresence(cliente, corPrincipal) },
 		{ id: '15', action: () => menuConfiguracao(cliente, corPrincipal) },
 		{ id: '16', action: () => menuZaralho(cliente, corPrincipal) },
+		{ id: 'help', action: () => exibirAjudaComandosDiscord() },
 		{ id: '99', action: () => process.exit(0) },
 		{ id: 'bg', action: () => menuGerenciarTarefas() },
 		{
@@ -737,16 +922,35 @@ async function menuPrincipal() {
 		}
 	];
 	
+	let numeroTarefasAnterior = 0;
+	
 	while (true) {
+		if (deveLimparMenuProximaIteracao) {
+			deveLimparMenuProximaIteracao = false;
+			await sleep(0.1);
+		}
+		
 		entrarMenuPrincipal();
+		
+		const numeroTarefasAtual = backgroundTaskManager.getTasks().length;
+		if (numeroTarefasAtual !== numeroTarefasAnterior) {
+			numeroTarefasAnterior = numeroTarefasAtual;
+		}
 
 		const opcao = await exibirMenuPrincipal(cliente, corPrincipal, atualizacaoDisponivel);
 
+		if (opcao === '__CANCELLED__') {
+			continue;
+		}
+
 		sairMenuPrincipal();
+		
+		await sleep(0.15);
 
-		const opcaoNormalizada = opcao.toLowerCase().trim();
+		const opcaoTrimmed = opcao.trim();
+		const opcaoNormalizada = opcaoTrimmed.toLowerCase();
 
-		const acaoEncontrada = acoesMenu.find((item) => item.id === opcao || item.id === opcaoNormalizada);
+		const acaoEncontrada = acoesMenu.find((item) => item.id === opcaoTrimmed || item.id === opcaoNormalizada);
 
 		if (acaoEncontrada) {
 			try {

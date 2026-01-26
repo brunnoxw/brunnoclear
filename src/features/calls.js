@@ -1,9 +1,9 @@
-const readlineSync = require('readline-sync');
 const { Cores, Simbolos, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
 const { exibirTitulo } = require('../ui/titulo');
 const { solicitarTexto, exibirErro } = require('../ui/menu');
 const { atualizarPresenca } = require('../services/rpc');
+const { readlineAsync } = require('../utils/readline-async');
 const UIComponents = require('../utils/components');
 const CONSTANTS = require('../config/constants');
 const { backgroundTaskManager } = require('../utils/backgroundTasks');
@@ -32,7 +32,7 @@ async function utilidadesCall(client, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('9', 'Proteger usuário (anti mute/deaf)', corPrincipal);
 	UIComponents.exibirOpcaoMenu('0', 'Voltar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
-	const opcao = readlineSync.question(UIComponents.obterPrompt());
+	const opcao = await readlineAsync.question(UIComponents.obterPrompt());
 
 	const voltarMenu = async () => {
 		await sleep(CONSTANTS.DELAYS.SHORT_PAUSE);
@@ -54,7 +54,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da call:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idCall = solicitarTexto('');
+		const idCall = await readlineAsync.question(UIComponents.obterPrompt());
 
 		UIComponents.limparTela();
 		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
@@ -68,7 +68,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Não', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const confirma = readlineSync.question(UIComponents.obterPrompt());
+		const confirma = await readlineAsync.question(UIComponents.obterPrompt());
 		if (confirma !== '1') {
 			return voltarMenu();
 		}
@@ -128,7 +128,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite o ID da call de origem:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idOrigem = solicitarTexto('');
+		const idOrigem = await readlineAsync.question(UIComponents.obterPrompt());
 
 		UIComponents.limparTela();
 		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
@@ -138,7 +138,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da call de destino:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idDestino = solicitarTexto('');
+		const idDestino = await readlineAsync.question(UIComponents.obterPrompt());
 
 		UIComponents.limparTela();
 		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
@@ -152,7 +152,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Não', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const confirma = readlineSync.question(UIComponents.obterPrompt());
+		const confirma = await readlineAsync.question(UIComponents.obterPrompt());
 		if (confirma !== '1') {
 			return voltarMenu();
 		}
@@ -222,10 +222,10 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Desmutar todos', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const escolha = readlineSync.question(UIComponents.obterPrompt());
+		const escolha = await readlineAsync.question(UIComponents.obterPrompt());
 
 		if (!['1', '2'].includes(escolha)) {
-			await exibirErro('Opção inválida.');
+			await exibirErro('Op��o inv�lida.');
 			return await voltarMenu();
 		}
 
@@ -239,7 +239,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da call:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idCall = solicitarTexto('');
+		const idCall = await readlineAsync.question(UIComponents.obterPrompt());
 		const canal = client.channels.cache.get(idCall);
 
 		if (!canal || canal.type !== 'GUILD_VOICE') {
@@ -301,10 +301,10 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Desensurdecer todos', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const escolha = readlineSync.question(UIComponents.obterPrompt());
+		const escolha = await readlineAsync.question(UIComponents.obterPrompt());
 
 		if (!['1', '2'].includes(escolha)) {
-			await exibirErro('Opção inválida.');
+			await exibirErro('Op��o inv�lida.');
 			return await voltarMenu();
 		}
 
@@ -321,7 +321,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da call:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idCall = solicitarTexto('');
+		const idCall = await readlineAsync.question(UIComponents.obterPrompt());
 		const canal = client.channels.cache.get(idCall);
 
 		if (!canal || canal.type !== 'GUILD_VOICE') {
@@ -384,7 +384,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da call:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idCall = solicitarTexto('');
+		const idCall = await readlineAsync.question(UIComponents.obterPrompt());
 		const canal = client.channels.cache.get(idCall);
 
 		if (!canal || canal.type !== 'GUILD_VOICE') {
@@ -427,7 +427,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 
 		console.log(`        Pressione ENTER para voltar ao menu...`);
-		readlineSync.question('');
+		await readlineAsync.question(UIComponents.obterPrompt());
 
 		await voltarMenu();
 	};
@@ -444,9 +444,9 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Farmar em calls aleatórias', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const escolha = readlineSync.question(UIComponents.obterPrompt());
+		const escolha = await readlineAsync.question(UIComponents.obterPrompt());
 		if (!['1', '2'].includes(escolha)) {
-			await exibirErro('Opção inválida.');
+			await exibirErro('Op��o inv�lida.');
 			return await voltarMenu();
 		}
 
@@ -458,7 +458,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Executar em segundo plano (retorna ao menu)', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const modoExecucao = readlineSync.question(UIComponents.obterPrompt());
+		const modoExecucao = await readlineAsync.question(UIComponents.obterPrompt());
 		const emSegundoPlano = modoExecucao === '2';
 
 		let canalSelecionado;
@@ -471,7 +471,7 @@ async function utilidadesCall(client, corPrincipal) {
 			UIComponents.exibirLinhaVazia();
 			UIComponents.exibirInfo('Digite o ID da call:', corPrincipal);
 			UIComponents.exibirLinhaVazia();
-			const idCall = solicitarTexto('');
+			const idCall = await readlineAsync.question(UIComponents.obterPrompt());
 			const canal = client.channels.cache.get(idCall);
 
 			if (!canal || canal.type !== 'GUILD_VOICE') {
@@ -492,7 +492,7 @@ async function utilidadesCall(client, corPrincipal) {
 			UIComponents.exibirLinhaVazia();
 			UIComponents.exibirInfo('Digite o ID do servidor:', corPrincipal);
 			UIComponents.exibirLinhaVazia();
-			const idGuild = solicitarTexto('');
+			const idGuild = await readlineAsync.question(UIComponents.obterPrompt());
 			const guild = client.guilds.cache.get(idGuild);
 			if (!guild) {
 				await exibirErro('Servidor não encontrado.');
@@ -508,7 +508,7 @@ async function utilidadesCall(client, corPrincipal) {
 			console.log(`        ${Simbolos.info} Digite o ID da categoria (opcional):`);
 			console.log(`        ${Simbolos.info} Deixe vazio para buscar em qualquer categoria`);
 			UIComponents.exibirLinhaVazia();
-			const categoria = solicitarTexto('');
+			const categoria = await readlineAsync.question(UIComponents.obterPrompt());
 
 			const calls = guild.channels.cache.filter(
 				(c) =>
@@ -692,7 +692,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID da categoria:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idCategoria = solicitarTexto('');
+		const idCategoria = await readlineAsync.question(UIComponents.obterPrompt());
 
 		UIComponents.limparTela();
 		exibirTitulo(client?.user?.username || 'Desconhecido', client?.user?.id || '0', corPrincipal);
@@ -701,7 +701,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite o ID do usuário:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idUsuario = solicitarTexto('');
+		const idUsuario = await readlineAsync.question(UIComponents.obterPrompt());
 
 		const categoria = client.channels.cache.get(idCategoria);
 		if (!categoria || categoria.type !== 'GUILD_CATEGORY') {
@@ -833,7 +833,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite o ID do servidor:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idGuild = solicitarTexto('');
+		const idGuild = await readlineAsync.question(UIComponents.obterPrompt());
 		const guild = client.guilds.cache.get(idGuild);
 		if (!guild) {
 			await exibirErro('Servidor não encontrado.');
@@ -847,7 +847,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite os IDs dos usuários (separados por vírgula):', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idsInput = solicitarTexto('');
+		const idsInput = await readlineAsync.question(UIComponents.obterPrompt());
 
 		const idsUsuarios = idsInput
 			.split(',')
@@ -1041,7 +1041,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID do servidor:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idGuild = solicitarTexto('');
+		const idGuild = await readlineAsync.question(UIComponents.obterPrompt());
 		const guild = client.guilds.cache.get(idGuild);
 
 		if (!guild) {
@@ -1057,7 +1057,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite os IDs dos usuários (separados por vírgula):', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idsInput = solicitarTexto('');
+		const idsInput = await readlineAsync.question(UIComponents.obterPrompt());
 
 		const idsUsuarios = idsInput
 			.split(',')
@@ -1092,7 +1092,7 @@ async function utilidadesCall(client, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Executar em segundo plano (retorna ao menu)', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const modoExecucao = readlineSync.question(UIComponents.obterPrompt());
+		const modoExecucao = await readlineAsync.question(UIComponents.obterPrompt());
 		const emSegundoPlano = modoExecucao === '2';
 
 		let deveContinuar = true;
@@ -1277,7 +1277,7 @@ async function utilidadesCall(client, corPrincipal) {
 	if (acaoEncontrada) {
 		return await acaoEncontrada.action();
 	} else {
-		await exibirErro('Opção inválida.');
+		await exibirErro('Op��o inv�lida.');
 		return voltarMenu();
 	}
 }
@@ -1286,3 +1286,4 @@ module.exports = {
 	utilidadesCall,
 	menuUtilsCalls: utilidadesCall
 };
+

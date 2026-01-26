@@ -1,4 +1,3 @@
-const readlineSync = require('readline-sync');
 const { obterConfig, atualizarPropriedade } = require('../config/configuracao');
 const { Cores, Simbolos, hexParaAnsi, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
@@ -51,7 +50,7 @@ async function configurarDelay() {
 	UIComponents.exibirInfo('Exemplo: 1.5 (para 1 segundo e meio)', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const delayInput = solicitarTexto('');
+	const delayInput = await solicitarTexto('');
 
 	const delayEmSegundos = parseFloat(delayInput);
 	if (isNaN(delayEmSegundos) || delayEmSegundos <= 0) {
@@ -85,7 +84,7 @@ async function configurarCor() {
 				UIComponents.exibirInfo('Exemplo: #faa7e8', corPrincipal);
 				UIComponents.exibirLinhaVazia();
 
-				const cor = solicitarTexto('');
+			const cor = await solicitarTexto('');
 
 				try {
 					hexParaAnsi(cor);
@@ -127,7 +126,7 @@ async function configurarCor() {
 	UIComponents.exibirOpcaoMenu('2', 'Tema Rainbow (gradiente colorido)', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const opcao = solicitarTexto('');
+	const opcao = await solicitarTexto('');
 
 	const acaoEncontrada = acoesMenu.find((item) => item.id === opcao);
 
@@ -172,7 +171,7 @@ async function configurarEsperaFetch(cliente, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('2', 'Voltar', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const opcao = readlineSync.question(UIComponents.obterPrompt());
+		const opcao = await solicitarTexto(UIComponents.obterPrompt());
 
 		const acaoEncontrada = acoesSubmenu.find((item) => item.id === opcao);
 

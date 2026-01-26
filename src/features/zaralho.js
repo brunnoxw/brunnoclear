@@ -1,9 +1,9 @@
-const readlineSync = require('readline-sync');
 const { Cores, Simbolos, textoRainbow } = require('../utils/cores');
 const { sleep } = require('../utils/sleep');
 const { exibirTitulo } = require('../ui/titulo');
 const { solicitarTexto, exibirErro } = require('../ui/menu');
 const { atualizarPresenca } = require('../services/rpc');
+const { readlineAsync } = require('../utils/readline-async');
 const UIComponents = require('../utils/components');
 const CONSTANTS = require('../config/constants');
 
@@ -27,7 +27,7 @@ async function menuZaralho(client, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('0', 'Voltar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const opcao = readlineSync.question(UIComponents.obterPrompt());
+	const opcao = await readlineAsync.question(UIComponents.obterPrompt());
 
 	const voltarMenu = async () => {
 		await sleep(CONSTANTS.DELAYS.SHORT_PAUSE);
@@ -45,7 +45,7 @@ async function menuZaralho(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID do servidor:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idGuild = solicitarTexto('');
+		const idGuild = await readlineAsync.question(UIComponents.obterPrompt());
 		const guild = client.guilds.cache.get(idGuild);
 
 		if (!guild) {
@@ -60,7 +60,7 @@ async function menuZaralho(client, corPrincipal) {
 		UIComponents.exibirLinhaVazia();
 		UIComponents.exibirInfo('Digite o ID do usuário a ser bloqueado:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
-		const idUsuario = solicitarTexto('');
+		const idUsuario = await readlineAsync.question(UIComponents.obterPrompt());
 		const membro = await guild.members.fetch(idUsuario).catch(() => null);
 
 		if (!membro) {
@@ -98,7 +98,7 @@ async function menuZaralho(client, corPrincipal) {
 		UIComponents.exibirInfo(`Digite o nickname que deseja forçar para ${membro.user.tag}:`, corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const nicknamePersistente = solicitarTexto('');
+		const nicknamePersistente = await readlineAsync.question(UIComponents.obterPrompt());
 		if (!nicknamePersistente || nicknamePersistente.trim() === '') {
 			await exibirErro('Nickname inválido.');
 			return voltarMenu();
@@ -239,7 +239,7 @@ async function menuZaralho(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID do servidor:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idGuild = solicitarTexto('');
+		const idGuild = await readlineAsync.question(UIComponents.obterPrompt());
 		const guild = client.guilds.cache.get(idGuild);
 
 		if (!guild) {
@@ -255,7 +255,7 @@ async function menuZaralho(client, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID do usuário a ser bloqueado:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idUsuario = solicitarTexto('');
+		const idUsuario = await readlineAsync.question(UIComponents.obterPrompt());
 		const membro = await guild.members.fetch(idUsuario).catch(() => null);
 
 		if (!membro) {

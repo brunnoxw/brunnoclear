@@ -370,6 +370,7 @@ async function verificarAtualizacao(silencioso = false) {
 		if (!silencioso) {
 			console.log(`\n${Simbolos.carregando} Verificando atualizações no GitHub...`);
 		}
+		
 		const releaseData = await httpsGetJSON(API_URL);
 		const versaoAtual = obterVersaoAtual();
 		const versaoNova = releaseData.tag_name

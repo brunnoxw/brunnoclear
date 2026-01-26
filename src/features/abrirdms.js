@@ -234,7 +234,7 @@ async function abrirDMs(cliente, corPrincipal) {
 			return;
 		}
 	} else if (opcao === '2') {
-		const idServidor = solicitarTexto('ID do servidor:');
+		const idServidor = await solicitarTexto('ID do servidor:');
 
 		const servidor = cliente.guilds.cache.get(idServidor);
 		if (!servidor) {
@@ -280,7 +280,7 @@ async function abrirDMs(cliente, corPrincipal) {
 		);
 		UIComponents.exibirLinhaVazia();
 
-		const idsTexto = solicitarTexto('ID(s):');
+		const idsTexto = await solicitarTexto('ID(s):');
 
 		idsUsuarios = idsTexto
 			.split(/[,\s]+/)
@@ -341,7 +341,7 @@ async function abrirDMs(cliente, corPrincipal) {
 		console.log(`        ${UIComponents.textoColorido('Deixe vazio para abrir DM com TODOS', corPrincipal, false)}`);
 		UIComponents.exibirLinhaVazia();
 
-		const whitelistInput = solicitarTexto('');
+		const whitelistInput = await solicitarTexto('');
 		const whitelist = whitelistInput ? whitelistInput.split(',').map((id) => id.trim()) : [];
 
 		UIComponents.limparTela();
@@ -391,7 +391,7 @@ async function abrirDMs(cliente, corPrincipal) {
 		UIComponents.exibirInfo('Digite o ID do usuário:', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const idUsuario = solicitarTexto('ID do usuário:');
+		const idUsuario = await solicitarTexto('ID do usuário:');
 
 		if (!idUsuario || !/^\d+$/.test(idUsuario.trim())) {
 			UIComponents.exibirLinhaVazia();

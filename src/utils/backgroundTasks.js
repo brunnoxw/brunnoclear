@@ -1,10 +1,12 @@
 const { atualizarPresenca } = require('../services/rpc');
+const EventEmitter = require('events');
 
 /**
  * Gerenciador de tarefas em segundo plano
  */
-class BackgroundTaskManager {
+class BackgroundTaskManager extends EventEmitter {
 	constructor() {
+		super();
 		this.tasks = new Map();
 		this.taskIdCounter = 0;
 	}
@@ -25,6 +27,7 @@ class BackgroundTaskManager {
 			data,
 			startedAt: Date.now()
 		});
+		this.emit('taskAdded', taskId);
 		return taskId;
 	}
 
@@ -38,6 +41,7 @@ class BackgroundTaskManager {
 			await task.stopCallback();
 		}
 		this.tasks.delete(taskId);
+		this.emit('taskRemoved', taskId);
 	}
 
 	/**
@@ -50,6 +54,7 @@ class BackgroundTaskManager {
 			}
 		}
 		this.tasks.clear();
+		this.emit('allTasksRemoved');
 	}
 
 	/**
