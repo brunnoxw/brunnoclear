@@ -8,7 +8,15 @@ const { obterConfig } = require('../config/configuracao');
  * @returns {Promise<Array>} - Array de mensagens filtradas
  */
 async function buscarTodasMensagens(cliente, idCanal, onProgress = null) {
-	const canal = cliente.channels.cache.get(idCanal);
+	let canal = cliente.channels.cache.get(idCanal);
+
+	if (!canal) {
+		try {
+			canal = await cliente.channels.fetch(idCanal);
+		} catch (e) {
+			return [];
+		}
+	}
 
 	if (!canal) {
 		return [];
@@ -51,7 +59,15 @@ async function buscarTodasMensagens(cliente, idCanal, onProgress = null) {
  * @returns {Promise<Array>} - Array de TODAS as mensagens
  */
 async function buscarTodasMensagensParaBackup(cliente, idCanal, onProgress = null) {
-	const canal = cliente.channels.cache.get(idCanal);
+	let canal = cliente.channels.cache.get(idCanal);
+
+	if (!canal) {
+		try {
+			canal = await cliente.channels.fetch(idCanal);
+		} catch (e) {
+			return [];
+		}
+	}
 
 	if (!canal) {
 		return [];

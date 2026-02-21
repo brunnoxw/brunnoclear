@@ -539,7 +539,6 @@ async function apagarPackage(cliente, corPrincipal) {
 		detalhe: 'Apagar package'
 	});
 
-	const readlineSync = require('readline-sync');
 	const { textoRainbow } = require('../utils/cores');
 
 	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
@@ -560,7 +559,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('2', 'Voltar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const temPackage = readlineSync.question(UIComponents.obterPrompt());
+	const temPackage = await solicitarTexto('');
 	if (temPackage !== '1') {
 		return;
 	}
@@ -598,7 +597,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	console.log(`        ${UIComponents.textoColorido('Deixe vazio para apagar TODAS as DMs', corPrincipal, false)}`);
 	UIComponents.exibirLinhaVazia();
 
-	const whitelistInput = readlineSync.question(UIComponents.obterPrompt());
+	const whitelistInput = await solicitarTexto('');
 	const whitelist = whitelistInput ? whitelistInput.split(',').map((id) => id.trim()) : [];
 	UIComponents.limparTela();
 	exibirTitulo(cliente.user.username, cliente.user.id, corPrincipal);
@@ -660,7 +659,7 @@ async function apagarPackage(cliente, corPrincipal) {
 		UIComponents.exibirOpcaoMenu('3', 'Cancelar', corPrincipal);
 		UIComponents.exibirLinhaVazia();
 		
-		const opcaoProgresso = readlineSync.question(UIComponents.obterPrompt());
+		const opcaoProgresso = await solicitarTexto('');
 		
 		if (opcaoProgresso === '1') {
 			idsParaProcessar = idsRestantes;
@@ -694,7 +693,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirOpcaoMenu('2', 'Não, voltar', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const confirmar = readlineSync.question(UIComponents.obterPrompt());
+	const confirmar = await solicitarTexto('');
 	if (confirmar !== '1') {
 		await sleep(2);
 		return;
@@ -716,7 +715,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirSeparador(corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const opcaoBackup = readlineSync.question(UIComponents.obterPrompt());
+	const opcaoBackup = await solicitarTexto('');
 	const fazerBackup = opcaoBackup === '1';
 	let baixarAnexos = false;
 	
@@ -738,7 +737,7 @@ async function apagarPackage(cliente, corPrincipal) {
 		UIComponents.exibirSeparador(corPrincipal);
 		UIComponents.exibirLinhaVazia();
 
-		const opcaoAnexos = readlineSync.question(UIComponents.obterPrompt());
+		const opcaoAnexos = await solicitarTexto('');
 		baixarAnexos = opcaoAnexos === '1';
 	}
 	
@@ -815,7 +814,7 @@ async function apagarPackage(cliente, corPrincipal) {
 	UIComponents.exibirInfo('Pressione ENTER para voltar ao menu', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	readlineSync.question('');
+	await solicitarTexto('');
 }
 
 module.exports = {

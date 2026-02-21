@@ -72,7 +72,7 @@ async function limparDMUnica(cliente, corPrincipal) {
 		corPrincipal
 	);
 
-	const loadingInterval = setInterval(() => {
+	let loadingInterval = setInterval(() => {
 		const frame = frames[frameIndex % frames.length];
 		const textoCarregando =
 			corPrincipal === 'rainbow'
@@ -91,6 +91,52 @@ async function limparDMUnica(cliente, corPrincipal) {
 		todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, canal.id, (totalBuscadas) => {
 			mensagensBuscadas = totalBuscadas;
 		});
+	}
+
+	if (fazerBackup && todasMensagensParaBackup.length > 0) {
+		clearInterval(loadingInterval);
+		process.stdout.clearLine(0);
+		process.stdout.cursorTo(0);
+		try {
+			UIComponents.limparTela();
+			UIComponents.exibirLinhaVazia();
+			UIComponents.exibirInfo('Criando backup...', corPrincipal);
+			await criarBackup(todasMensagensParaBackup, nomeUsuario, canal.recipient?.id || idUsuario, corPrincipal, true);
+		} catch (erro) {
+			console.error(`\n        ${Simbolos.erro} Erro ao criar backup: ${erro.message}`);
+			await sleep(3);
+		}
+
+		mensagensBuscadas = 0;
+		frameIndex = 0;
+
+		const textoRetomando =
+			corPrincipal === 'rainbow'
+				? `        ${textoRainbow('📥 Buscando mensagens com')} ${nomeUsuario}\n`
+				: `        ${cor}📥 Buscando mensagens com${reset} ${nomeUsuario}\n`;
+
+		await exibirProgressoCompleto(
+			0,
+			1,
+			'BrunnoClear | Limpar DM única',
+			'preparando',
+			textoRetomando,
+			cliente,
+			corPrincipal
+		);
+
+		loadingInterval = setInterval(() => {
+			const frame = frames[frameIndex % frames.length];
+			const textoCarregando =
+				corPrincipal === 'rainbow'
+					? textoRainbow(`Coletando mensagens... ${mensagensBuscadas} encontradas`)
+					: `${cor}Coletando mensagens...${reset} ${mensagensBuscadas} encontradas`;
+
+			process.stdout.clearLine(0);
+			process.stdout.cursorTo(0);
+			process.stdout.write(`        ${frame} ${textoCarregando}   `);
+			frameIndex++;
+		}, 80);
 	}
 
 	/**
@@ -197,13 +243,6 @@ async function limparDMUnica(cliente, corPrincipal) {
 	process.stdout.clearLine(0);
 	process.stdout.cursorTo(0);
 
-	if (fazerBackup && todasMensagensParaBackup.length > 0) {
-		UIComponents.limparTela();
-		UIComponents.exibirLinhaVazia();
-		UIComponents.exibirInfo('Criando backup...', corPrincipal);
-		await criarBackup(todasMensagensParaBackup, nomeUsuario, canal.recipient?.id || idUsuario, corPrincipal, true);
-	}
-
 	if (totalFiltradas === 0) {
 		await exibirErro('Você não tem mensagens aí.');
 	}
@@ -278,7 +317,7 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 			corPrincipal
 		);
 
-		const loadingInterval = setInterval(() => {
+		let loadingInterval = setInterval(() => {
 			const frame = frames[frameIndex % frames.length];
 			const textoCarregando =
 				corPrincipal === 'rainbow'
@@ -297,6 +336,81 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 			todasMensagensParaBackup = await buscarTodasMensagensParaBackup(cliente, dm.id, (totalBuscadas) => {
 				mensagensBuscadas = totalBuscadas;
 			});
+		}
+
+		if (fazerBackup && todasMensagensParaBackup.length > 0) {
+			clearInterval(loadingInterval);
+			process.stdout.clearLine(0);
+			process.stdout.cursorTo(0);
+
+			const fs = require('fs');
+			const path = require('path');
+
+			const sanitizarNome = (nome) => nome.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_');
+			const pastaBackups = path.join(process.cwd(), 'backups');
+			let backupJaExiste = false;
+
+			if (fs.existsSync(pastaBackups)) {
+				const arquivos = fs.readdirSync(pastaBackups);
+				const idUsuario = dm.recipient?.id || dm.id;
+				const prefixoBusca = `${sanitizarNome(nomeDestinatario)}_${idUsuario}_`;
+				backupJaExiste = arquivos.some((pasta) => pasta.startsWith(prefixoBusca));
+			}
+
+			if (!backupJaExiste) {
+				UIComponents.limparTela();
+				UIComponents.exibirLinhaVazia();
+				UIComponents.exibirInfo(`Criando backup de ${nomeDestinatario}...`, corPrincipal);
+				try {
+					await criarBackup(
+						todasMensagensParaBackup,
+						nomeDestinatario,
+						dm.recipient?.id || dm.id,
+						corPrincipal,
+						false,
+						baixarAnexos
+					);
+				} catch (erro) {
+					console.error(`\n        ${Simbolos.erro} Erro ao criar backup de ${nomeDestinatario}: ${erro.message}`);
+					await sleep(2);
+				}
+			} else {
+				UIComponents.limparTela();
+				UIComponents.exibirLinhaVazia();
+				UIComponents.exibirInfo(`Backup já existe para ${nomeDestinatario}, pulando...`, corPrincipal);
+				await sleep(0.5);
+			}
+
+			mensagensBuscadas = 0;
+			frameIndex = 0;
+
+			const textoRetomando =
+				corPrincipal === 'rainbow'
+					? `        ${textoRainbow('📥 Buscando mensagens com')} ${nomeDestinatario}\n`
+					: `        ${cor}📥 Buscando mensagens com${reset} ${nomeDestinatario}\n`;
+
+			await exibirProgressoCompleto(
+				dms.indexOf(dm),
+				dms.length,
+				'BrunnoClear | Limpar DMs abertas',
+				'DMs processadas',
+				textoRetomando,
+				cliente,
+				corPrincipal
+			);
+
+			loadingInterval = setInterval(() => {
+				const frame = frames[frameIndex % frames.length];
+				const textoCarregando =
+					corPrincipal === 'rainbow'
+						? textoRainbow(`Coletando mensagens... ${mensagensBuscadas} encontradas`)
+						: `${cor}Coletando mensagens...${reset} ${mensagensBuscadas} encontradas`;
+
+				process.stdout.clearLine(0);
+				process.stdout.cursorTo(0);
+				process.stdout.write(`        ${frame} ${textoCarregando}   `);
+				frameIndex++;
+			}, 80);
 		}
 
 		if (config.esperar_fetch === false) {
@@ -393,40 +507,6 @@ async function limparDMsAbertas(cliente, corPrincipal, fecharApos = false) {
 		clearInterval(loadingInterval);
 		process.stdout.clearLine(0);
 		process.stdout.cursorTo(0);
-
-		if (fazerBackup && todasMensagensParaBackup.length > 0) {
-			const fs = require('fs');
-			const path = require('path');
-
-			const sanitizarNome = (nome) => nome.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_');
-			const pastaBackups = path.join(process.cwd(), 'backups');
-			let backupJaExiste = false;
-
-			if (fs.existsSync(pastaBackups)) {
-				const arquivos = fs.readdirSync(pastaBackups);
-				const idUsuario = dm.recipient?.id || dm.id;
-				const prefixoBusca = `${sanitizarNome(nomeDestinatario)}_${idUsuario}_`;
-				backupJaExiste = arquivos.some((pasta) => pasta.startsWith(prefixoBusca));
-			}
-			if (!backupJaExiste) {
-				UIComponents.limparTela();
-				UIComponents.exibirLinhaVazia();
-				UIComponents.exibirInfo(`Criando backup de ${nomeDestinatario}...`, corPrincipal);
-				await criarBackup(
-					todasMensagensParaBackup,
-					nomeDestinatario,
-					dm.recipient?.id || dm.id,
-					corPrincipal,
-					false,
-					baixarAnexos
-				);
-			} else {
-				UIComponents.limparTela();
-				UIComponents.exibirLinhaVazia();
-				UIComponents.exibirInfo(`Backup já existe para ${nomeDestinatario}, pulando...`, corPrincipal);
-				await sleep(0.5);
-			}
-		}
 
 		if (fecharApos) {
 			await dm.delete().catch(() => {});

@@ -603,6 +603,10 @@ function gerarHTMLChamada(msg, mesmoDia) {
 }
 
 function gerarHTMLMensagem(msg, msgAnterior, anexosMap) {
+	if (!msg || !msg.author) {
+		return '';
+	}
+
 	const data = new Date(msg.createdTimestamp);
 	const dataAnterior = msgAnterior ? new Date(msgAnterior.createdTimestamp) : null;
 

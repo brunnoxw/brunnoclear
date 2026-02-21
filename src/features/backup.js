@@ -44,8 +44,6 @@ async function buscarTodasMensagensBackup(canal, callback) {
  * Cria backup de mensagens de uma DM (Feature do painel)
  */
 async function criarBackupMensagens(cliente, corPrincipal) {
-	const readlineSync = require('readline-sync');
-
 	UIComponents.limparTela();
 	UIComponents.definirTituloJanela(CONSTANTS.WINDOW_TITLES.BACKUP);
 
@@ -61,7 +59,7 @@ async function criarBackupMensagens(cliente, corPrincipal) {
 	UIComponents.exibirInfo('Digite o ID do usuário ou canal da DM:', corPrincipal);
 	UIComponents.exibirLinhaVazia();
 
-	const idUsuario = readlineSync.question(UIComponents.obterPrompt()).trim();
+	const idUsuario = await solicitarTexto('');
 
 	let canal = cliente.channels.cache.get(idUsuario);
 	let nomeUsuario, idCanalUsuario;
@@ -112,22 +110,27 @@ async function criarBackupMensagens(cliente, corPrincipal) {
 		return;
 	}
 
-	const caminhoArquivo = await criarBackup(mensagens, nomeUsuario, idCanalUsuario, corPrincipal, true);
+	try {
+		const caminhoArquivo = await criarBackup(mensagens, nomeUsuario, idCanalUsuario, corPrincipal, true);
 
-	await sleep(CONSTANTS.DELAYS.MESSAGE_DISPLAY);
+		await sleep(CONSTANTS.DELAYS.MESSAGE_DISPLAY);
 
-	UIComponents.exibirLinhaVazia();
-	console.log(`        ${Simbolos.info} Deseja abrir o arquivo agora? ${Cores.verde}[s/n]${Cores.reset}`);
-	UIComponents.exibirLinhaVazia();
+		UIComponents.exibirLinhaVazia();
+		console.log(`        ${Simbolos.info} Deseja abrir o arquivo agora? ${Cores.verde}[s/n]${Cores.reset}`);
+		UIComponents.exibirLinhaVazia();
 
-	const resposta = readlineSync.question(UIComponents.obterPrompt()).trim();
+		const resposta = await solicitarTexto('');
 
-	if (resposta.toLowerCase() === 's' || resposta.toLowerCase() === 'sim') {
-		const { spawn } = require('child_process');
-		const comando = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+		if (resposta.toLowerCase() === 's' || resposta.toLowerCase() === 'sim') {
+			const { spawn } = require('child_process');
+			const comando = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
 
-		spawn(comando, [caminhoArquivo], { shell: true, detached: true });
-		await exibirSucesso('Arquivo aberto no navegador!');
+			spawn(comando, [caminhoArquivo], { shell: true, detached: true });
+			await exibirSucesso('Arquivo aberto no navegador!');
+		}
+	} catch (erro) {
+		console.error(`\n        ${Simbolos.erro} Erro ao criar backup: ${erro.message}`);
+		await sleep(3);
 	}
 
 	await sleep(0.5);

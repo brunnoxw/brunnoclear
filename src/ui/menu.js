@@ -200,10 +200,8 @@ async function confirmar(mensagem) {
  * @returns {Promise<string>} - Texto digitado
  */
 async function solicitarTexto(mensagem) {
-	if (mensagem) {
-		console.log(mensagem);
-	}
-	return (await readlineAsync.question('        > ')).trim();
+	console.log(mensagem);
+	return (await readlineAsync.question('> ')).trim();
 }
 
 /**
